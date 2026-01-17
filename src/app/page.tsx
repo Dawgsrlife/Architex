@@ -298,9 +298,9 @@ function WorkSection() {
   }, []);
 
   const works = [
-    { num: "001", title: "Flow Builder", desc: "Visual node editor for complex workflows", video: "/assets/13678999_1920_1080_25fps.mp4" },
-    { num: "002", title: "Data Canvas", desc: "Real-time data visualization platform", video: "/assets/14471955_3840_2160_30fps.mp4" },
-    { num: "003", title: "Pipeline Studio", desc: "Enterprise-grade pipeline orchestration", video: "/assets/6346217-uhd_4096_2160_25fps.mp4" },
+    { num: "001", title: "Flow Builder", desc: "Visual node editor for complex workflows", video: "/assets/14471955_3840_2160_30fps.mp4" },
+    { num: "002", title: "Data Canvas", desc: "Real-time data visualization platform", video: "/assets/6346217-uhd_4096_2160_25fps.mp4" },
+    { num: "003", title: "Pipeline Studio", desc: "Enterprise-grade pipeline orchestration", video: "/assets/12575318_3840_2160_30fps.mp4" },
   ];
 
   return (
