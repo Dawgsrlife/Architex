@@ -423,7 +423,7 @@ function ProcessSection() {
 
         <div className="relative max-w-4xl mx-auto">
           {/* Vertical Progress Line */}
-          <div className="absolute left-[39px] lg:left-1/2 top-0 bottom-0 w-px bg-stone-800 -translate-x-1/2">
+          <div className="absolute left-[31px] lg:left-10 top-0 bottom-0 w-px bg-stone-800">
             <div ref={lineRef} className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-[#7c3aed] via-[#a78bfa] to-transparent origin-top scale-y-0" />
           </div>
 
@@ -432,28 +432,25 @@ function ProcessSection() {
               <div
                 key={step.num}
                 ref={(el) => { if (el) stepsRef.current[i] = el; }}
-                className={`relative flex items-start gap-12 lg:gap-0 ${i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"}`}
+                className="relative flex items-start gap-8 lg:items-center"
               >
                 {/* Number/Circle Container */}
-                <div className="relative z-20 flex-shrink-0 w-20 h-20 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center lg:absolute lg:left-1/2 lg:-translate-x-1/2 overflow-hidden group">
+                <div className="relative z-20 flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <span className="text-2xl font-bold text-white relative z-10">{step.num}</span>
+                  <span className="text-xl lg:text-2xl font-bold text-white relative z-10">{step.num}</span>
                   <div className="absolute -inset-2 bg-[#7c3aed]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
 
                 {/* Content Card */}
-                <div className={`flex-1 lg:w-[calc(50%-60px)] ${i % 2 === 0 ? "lg:pr-20 lg:text-right" : "lg:pl-20 lg:text-left"}`}>
+                <div className="flex-1">
                   <div className="group relative">
-                    <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-[#a78bfa] transition-colors duration-300">{step.title}</h3>
-                    <p className="text-stone-400 text-lg leading-relaxed">{step.desc}</p>
+                    <h3 className="text-2xl lg:text-3xl font-bold text-white mb-2 lg:mb-4 group-hover:text-[#a78bfa] transition-colors duration-300">{step.title}</h3>
+                    <p className="text-stone-400 text-base lg:text-lg leading-relaxed">{step.desc}</p>
                     
                     {/* Hover Glow Line */}
-                    <div className={`absolute bottom-0 h-px bg-gradient-to-r from-transparent via-[#7c3aed]/50 to-transparent transition-all duration-700 w-0 group-hover:w-full ${i % 2 === 0 ? "right-0" : "left-0"}`} />
+                    <div className="absolute bottom-0 left-0 h-px bg-gradient-to-r from-[#7c3aed]/50 via-[#7c3aed]/50 to-transparent transition-all duration-700 w-0 group-hover:w-full" />
                   </div>
                 </div>
-
-                {/* Empty Space for alignment */}
-                <div className="hidden lg:block lg:w-[calc(50%-60px)]" />
               </div>
             ))}
           </div>
