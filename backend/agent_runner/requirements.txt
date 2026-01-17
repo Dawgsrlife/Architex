@@ -1,0 +1,10 @@
+# Core dependencies
+motor==3.3.2
+pydantic==2.5.0
+python-dotenv==1.0.0
+
+# Optional: Gemini API (for fallback)
+google-generativeai==0.3.2
+
+# Note: Cline CLI should be installed separately if using Cline adapter
+# The runner will fall back to Gemini if Cline is not available

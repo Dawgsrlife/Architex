@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: agent-runner-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: architex
+    networks:
+      - agent-runner-net
+
+  agent-runner:
+    build: .
+    container_name: agent-runner
+    depends_on:
+      - mongo
+    env_file:
+      - .env
+    volumes:
+      - /tmp:/tmp  # Mount tmp for workspace directories
+    networks:
+      - agent-runner-net
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+
+networks:
+  agent-runner-net:
+    driver: bridge
