@@ -6,11 +6,13 @@ function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#C4A77D] flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#C4A77D] to-[#8B7355] rounded-lg" />
+              <div className="absolute inset-[3px] bg-background rounded-[5px]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-bold bg-gradient-to-br from-[#C4A77D] to-[#8B7355] bg-clip-text text-transparent">A</span>
+              </div>
             </div>
             <span className="text-xl font-semibold tracking-tight">Architex</span>
           </div>
@@ -571,11 +573,13 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-[#C4A77D] flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#C4A77D] to-[#8B7355] rounded-lg" />
+                <div className="absolute inset-[3px] bg-background rounded-[5px]" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-sm font-bold bg-gradient-to-br from-[#C4A77D] to-[#8B7355] bg-clip-text text-transparent">A</span>
+                </div>
               </div>
               <span className="text-xl font-semibold">Architex</span>
             </div>
