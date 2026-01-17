@@ -195,12 +195,52 @@ function HeroSection() {
           </div>
         </div>
 
-        <div ref={videoRef} className="mt-16 relative">
-          <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200/30 dark:border-stone-700/30 shadow-2xl">
-            <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+        <div ref={videoRef} className="mt-16 relative group">
+          <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200/30 dark:border-stone-700/30 shadow-2xl relative">
+            <video autoPlay loop muted playsInline className="w-full h-full object-cover grayscale-[0.5] contrast-[1.1]">
               <source src="/assets/12777809_3840_2160_30fps.mp4" type="video/mp4" />
             </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-stone-950/20" />
+            
+            {/* Overlay UI Elements */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {/* Floating Node 1 */}
+              <div className="absolute top-1/4 left-10 w-48 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl animate-float-slow">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Data Stream</span>
+                </div>
+                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-400 w-2/3 animate-pulse" />
+                </div>
+              </div>
+
+              {/* Floating Node 2 */}
+              <div className="absolute bottom-1/4 right-10 w-56 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl animate-float-delayed">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-[10px] font-bold text-[#a78bfa] uppercase">Logic Module</span>
+                  <svg className="w-3 h-3 text-white/50" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-1.5 w-full bg-white/5 rounded-full" />
+                  <div className="h-1.5 w-3/4 bg-white/5 rounded-full" />
+                  <div className="h-1.5 w-1/2 bg-[#a78bfa]/40 rounded-full" />
+                </div>
+              </div>
+
+              {/* Center Status */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                <div className="w-16 h-16 rounded-full bg-[#7c3aed]/20 backdrop-blur-xl border border-[#7c3aed]/50 flex items-center justify-center mb-4 mx-auto cursor-pointer hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-white translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium text-white/80 tracking-tight">Watch Demo Overview</span>
+              </div>
+            </div>
+
+            {/* Scanning Effect */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#7c3aed]/5 to-transparent h-1/2 w-full -translate-y-full animate-scan pointer-events-none" />
           </div>
         </div>
       </div>
