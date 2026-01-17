@@ -7,7 +7,7 @@ function Navbar() {
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-6">
-            <span className="text-base font-medium">Architex</span>
+            <span className="text-base font-semibold font-display">Architex</span>
             <div className="hidden md:flex items-center gap-6">
               <a href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</a>
               <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
@@ -33,7 +33,7 @@ function HeroSection() {
     <section className="pt-28 pb-20 lg:pt-36 lg:pb-28">
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         <div className="max-w-2xl">
-          <h1 className="text-4xl sm:text-5xl font-medium tracking-tight leading-[1.15] mb-6">
+          <h1 className="text-4xl sm:text-5xl font-semibold font-display tracking-tight leading-[1.15] mb-6">
             Build production-ready
             <br />
             architecture with AI
@@ -66,7 +66,7 @@ function HowItWorksSection() {
     <section id="how-it-works" className="py-24 lg:py-32">
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         <p className="text-sm uppercase tracking-widest text-muted-foreground mb-4">How it works</p>
-        <h2 className="text-3xl sm:text-4xl font-medium tracking-tight mb-20 max-w-xl">
+        <h2 className="text-3xl sm:text-4xl font-semibold font-display tracking-tight mb-20 max-w-xl">
           From idea to production in three steps
         </h2>
         
@@ -111,7 +111,7 @@ function FeaturesSection() {
     <section id="features" className="py-24 lg:py-32 bg-muted/30">
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         <p className="text-sm uppercase tracking-widest text-muted-foreground mb-4">Capabilities</p>
-        <h2 className="text-3xl sm:text-4xl font-medium tracking-tight mb-6 max-w-xl">
+        <h2 className="text-3xl sm:text-4xl font-semibold font-display tracking-tight mb-6 max-w-xl">
           Built for developers who ship
         </h2>
         <p className="text-muted-foreground mb-16 max-w-xl">
@@ -154,7 +154,7 @@ function TestimonialsSection() {
     <section id="testimonials" className="py-24 lg:py-32">
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         <p className="text-sm uppercase tracking-widest text-muted-foreground mb-4">What people say</p>
-        <h2 className="text-3xl sm:text-4xl font-medium tracking-tight mb-20 max-w-xl">
+        <h2 className="text-3xl sm:text-4xl font-semibold font-display tracking-tight mb-20 max-w-xl">
           Trusted by developers
         </h2>
         
@@ -196,7 +196,7 @@ function PricingSection() {
     <section id="pricing" className="py-24 lg:py-32 bg-muted/30">
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         <p className="text-sm uppercase tracking-widest text-muted-foreground mb-4">Pricing</p>
-        <h2 className="text-3xl sm:text-4xl font-medium tracking-tight mb-6 max-w-xl">
+        <h2 className="text-3xl sm:text-4xl font-semibold font-display tracking-tight mb-6 max-w-xl">
           Simple pricing
         </h2>
         <p className="text-muted-foreground mb-16 max-w-xl">
@@ -258,7 +258,7 @@ function CTASection() {
   return (
     <section className="py-24 lg:py-32">
       <div className="max-w-5xl mx-auto px-6 lg:px-8 text-center">
-        <h2 className="text-3xl sm:text-4xl font-medium tracking-tight mb-6">
+        <h2 className="text-3xl sm:text-4xl font-semibold font-display tracking-tight mb-6">
           Ready to ship faster?
         </h2>
         <p className="text-muted-foreground mb-8 max-w-md mx-auto">
@@ -281,7 +281,7 @@ function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start gap-8">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg font-medium">Architex</span>
+              <span className="text-lg font-semibold font-display">Architex</span>
             </div>
             <p className="text-sm text-muted-foreground max-w-xs">
               AI-powered architecture design.
