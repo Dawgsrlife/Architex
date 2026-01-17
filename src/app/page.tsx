@@ -3,23 +3,17 @@ import { Button } from "@/components/ui/button";
 
 function Navbar() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-      <div className="max-w-5xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-6">
-            <span className="text-base font-semibold font-display">Architex</span>
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</a>
-              <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
-            </div>
-          </div>
+    <nav className="fixed top-0 left-0 right-0 z-50">
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 pt-4">
+        <div className="flex items-center justify-between h-12 px-4 rounded-full bg-background/60 backdrop-blur-md border border-border/50">
+          <span className="text-base font-semibold font-display">Architex</span>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link href="/dashboard">
-              <Button variant="ghost" size="sm">Sign in</Button>
+              <Button variant="ghost" size="sm" className="rounded-full">Sign in</Button>
             </Link>
             <Link href="/workflow">
-              <Button size="sm">Get started</Button>
+              <Button size="sm" className="rounded-full">Get started</Button>
             </Link>
           </div>
         </div>
