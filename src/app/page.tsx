@@ -398,8 +398,8 @@ function ProcessSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: "top top",
-          end: `+=${window.innerHeight * (totalSteps + 1)}`,
-          scrub: 1,
+          end: `+=${window.innerHeight * (totalSteps * 1.5)}`,
+          scrub: 0.8,
           pin: true,
           anticipatePin: 1,
           onUpdate: (self) => {
@@ -411,37 +411,27 @@ function ProcessSection() {
       });
 
       stepsRef.current.forEach((step, i) => {
-        const startProgress = i / totalSteps;
-        const endProgress = (i + 0.8) / totalSteps;
+        const segmentSize = 1 / totalSteps;
+        const startProgress = i * segmentSize;
+        const midProgress = startProgress + segmentSize * 0.15;
+        const holdProgress = startProgress + segmentSize * 0.7;
+        const endProgress = startProgress + segmentSize * 0.95;
         
-        tl.fromTo(step,
-          { 
-            z: -800,
-            opacity: 0,
-            rotateX: 45,
-            y: 200,
-            scale: 0.5
-          },
-          { 
-            z: 0,
-            opacity: 1,
-            rotateX: 0,
-            y: 0,
-            scale: 1,
-            ease: "power2.out"
-          },
-          startProgress
-        ).to(step,
-          {
-            z: 400,
-            opacity: 0,
-            rotateX: -20,
-            y: -100,
-            scale: 0.8,
+        tl.set(step, { opacity: 0, z: -600, rotateX: 25, y: 150, scale: 0.7 }, 0)
+          .to(step, { 
+            opacity: 1, z: 0, rotateX: 0, y: 0, scale: 1,
+            duration: midProgress - startProgress,
+            ease: "power3.out"
+          }, startProgress)
+          .to(step, { 
+            opacity: 1, z: 0, rotateX: 0, y: 0, scale: 1,
+            duration: holdProgress - midProgress
+          }, midProgress)
+          .to(step, {
+            opacity: 0, z: 300, rotateX: -15, y: -80, scale: 0.9,
+            duration: endProgress - holdProgress,
             ease: "power2.in"
-          },
-          endProgress
-        );
+          }, holdProgress);
       });
     }, sectionRef);
     return () => ctx.revert();
