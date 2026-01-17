@@ -1,0 +1,23 @@
+{
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "MONGODB_URI": "@mongodb_uri",
+    "GOOGLE_GEMINI_API_KEY": "@google_gemini_api_key",
+    "GITHUB_TOKEN": "@github_token",
+    "ELEVENLABS_API_KEY": "@elevenlabs_api_key",
+    "SOLANA_RPC_URL": "@solana_rpc_url",
+    "SOLANA_PRIVATE_KEY": "@solana_private_key",
+    "NEXTAUTH_SECRET": "@nextauth_secret"
+  },
+  "regions": ["iad1"],
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
+}
