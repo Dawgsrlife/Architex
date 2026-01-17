@@ -48,35 +48,33 @@ export function Logo({ className = "", animated = true, size = "md" }: LogoProps
           width="44"
           height="44"
           rx="12"
-          className="fill-black dark:fill-white"
+          fill="#1c1917"
+          className="dark:fill-[#fafaf9]"
         />
         <path
           d="M14 34L24 14L34 34"
-          stroke="white"
+          stroke="#7c3aed"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="dark:stroke-black"
         />
         <path
           d="M17 28H31"
-          stroke="white"
+          stroke="#a78bfa"
           strokeWidth="2.5"
           strokeLinecap="round"
-          className="dark:stroke-black"
         />
         <circle
           cx="24"
           cy="14"
           r="3"
-          className="fill-white dark:fill-black"
+          fill="#7c3aed"
         />
         <path
           d="M24 20V24"
-          stroke="white"
+          stroke="#a78bfa"
           strokeWidth="2"
           strokeLinecap="round"
-          className="dark:stroke-black"
         />
       </svg>
       <span className={`font-bold tracking-tight ${sizes[size].text}`}>
@@ -102,35 +100,33 @@ export function LogoMark({ className = "", size = 40 }: { className?: string; si
         width="44"
         height="44"
         rx="12"
-        className="fill-black dark:fill-white"
+        fill="#1c1917"
+        className="dark:fill-[#fafaf9]"
       />
       <path
         d="M14 34L24 14L34 34"
-        stroke="white"
+        stroke="#7c3aed"
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="dark:stroke-black"
       />
       <path
         d="M17 28H31"
-        stroke="white"
+        stroke="#a78bfa"
         strokeWidth="2.5"
         strokeLinecap="round"
-        className="dark:stroke-black"
       />
       <circle
         cx="24"
         cy="14"
         r="3"
-        className="fill-white dark:fill-black"
+        fill="#7c3aed"
       />
       <path
         d="M24 20V24"
-        stroke="white"
+        stroke="#a78bfa"
         strokeWidth="2"
         strokeLinecap="round"
-        className="dark:stroke-black"
       />
     </svg>
   );

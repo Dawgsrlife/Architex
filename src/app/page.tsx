@@ -31,15 +31,15 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-4">
         <div className={`flex items-center justify-between h-16 px-6 rounded-2xl transition-all duration-500 ${
           scrolled 
-            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5" 
+            ? "bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 shadow-lg shadow-black/5" 
             : "bg-transparent"
         }`}>
           <Logo size="sm" animated={false} />
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#work" className="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Work</a>
-            <a href="#process" className="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Process</a>
-            <a href="#pricing" className="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Pricing</a>
+            <a href="#work" className="text-sm text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors">Work</a>
+            <a href="#process" className="text-sm text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors">Process</a>
+            <a href="#pricing" className="text-sm text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors">Pricing</a>
           </div>
           
           <div className="flex items-center gap-3">
@@ -47,7 +47,7 @@ function Navbar() {
               <Button variant="ghost" size="sm" className="rounded-full font-medium hidden sm:inline-flex">Sign in</Button>
             </Link>
             <Link href="/workflow">
-              <Button size="sm" className="rounded-full font-medium bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 px-6">
+              <Button size="sm" className="rounded-full font-medium bg-stone-900 text-white hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100 px-6">
                 Start Project
               </Button>
             </Link>
@@ -126,9 +126,9 @@ function HeroSection() {
   ];
 
   return (
-    <section ref={heroRef} className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(120,119,198,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(74,222,128,0.1),transparent_50%)]" />
+    <section ref={heroRef} className="min-h-screen relative overflow-hidden bg-stone-50 dark:bg-stone-950">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(124,58,237,0.12),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(167,139,250,0.08),transparent_50%)]" />
       
       <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-32 pb-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center min-h-[80vh]">
@@ -156,30 +156,30 @@ function HeroSection() {
           </div>
 
           <div className="order-1 lg:order-2 space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-slate-200/50 dark:border-white/10 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Now accepting projects</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-stone-200/50 dark:border-stone-700/50 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#7c3aed] animate-pulse" />
+              <span className="text-sm font-medium text-stone-600 dark:text-stone-300">Now accepting projects</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
               <span ref={(el) => { if (el) titleLinesRef.current[0] = el; }} className="block">
                 Architecture
               </span>
-              <span ref={(el) => { if (el) titleLinesRef.current[1] = el; }} className="block text-slate-400 dark:text-slate-500">
+              <span ref={(el) => { if (el) titleLinesRef.current[1] = el; }} className="block text-stone-400 dark:text-stone-500">
                 that tells
               </span>
-              <span ref={(el) => { if (el) titleLinesRef.current[2] = el; }} className="block bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <span ref={(el) => { if (el) titleLinesRef.current[2] = el; }} className="block bg-gradient-to-r from-[#7c3aed] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
                 your story
               </span>
             </h1>
 
-            <p ref={subtitleRef} className="text-lg lg:text-xl text-slate-600 dark:text-slate-400 max-w-lg leading-relaxed">
+            <p ref={subtitleRef} className="text-lg lg:text-xl text-stone-600 dark:text-stone-400 max-w-lg leading-relaxed">
               We craft digital experiences that transform complex systems into elegant, intuitive interfaces. From concept to production.
             </p>
 
             <div ref={ctaRef} className="flex flex-wrap gap-4">
               <Link href="/workflow">
-                <Button size="lg" className="h-14 px-8 rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 shadow-xl shadow-slate-900/20 dark:shadow-white/20 group">
+                <Button size="lg" className="h-14 px-8 rounded-full bg-stone-900 text-white hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100 shadow-xl shadow-stone-900/20 dark:shadow-white/20 group">
                   Start your project
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -187,7 +187,7 @@ function HeroSection() {
                 </Button>
               </Link>
               <Link href="#work">
-                <Button variant="outline" size="lg" className="h-14 px-8 rounded-full border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <Button variant="outline" size="lg" className="h-14 px-8 rounded-full border-2 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800">
                   View our work
                 </Button>
               </Link>
@@ -196,11 +196,11 @@ function HeroSection() {
         </div>
 
         <div ref={videoRef} className="mt-16 relative">
-          <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-2xl">
+          <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200/30 dark:border-stone-700/30 shadow-2xl">
             <video autoPlay loop muted playsInline className="w-full h-full object-cover">
               <source src="/assets/12777809_3840_2160_30fps.mp4" type="video/mp4" />
             </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent" />
           </div>
         </div>
       </div>
@@ -226,12 +226,12 @@ function Ticker({ reverse = false }: { reverse?: boolean }) {
   const items = ["Architecture", "Design Systems", "React Flow", "Node Interfaces", "Data Pipelines", "Visual Editors"];
 
   return (
-    <div className="overflow-hidden py-6 bg-slate-100 dark:bg-slate-900/50">
+    <div className="overflow-hidden py-6 bg-stone-100 dark:bg-stone-900/50">
       <div ref={tickerRef} className="flex gap-8 whitespace-nowrap">
         {[...items, ...items, ...items].map((item, i) => (
-          <span key={i} className="flex items-center gap-8 text-2xl font-bold text-slate-300 dark:text-slate-700">
+          <span key={i} className="flex items-center gap-8 text-2xl font-bold text-stone-300 dark:text-stone-700">
             {item}
-            <span className="text-violet-500">✦</span>
+            <span className="text-[#7c3aed]">✦</span>
           </span>
         ))}
       </div>
@@ -268,18 +268,18 @@ function WorkSection() {
   ];
 
   return (
-    <section ref={sectionRef} id="work" className="py-32 relative overflow-hidden bg-white dark:bg-slate-950">
+    <section ref={sectionRef} id="work" className="py-32 relative overflow-hidden bg-white dark:bg-stone-950">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div ref={titleRef} className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-20">
           <div>
-            <span className="text-sm font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-4 block">Selected Work</span>
+            <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Selected Work</span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
               Crafted with
               <br />
-              <span className="text-slate-400 dark:text-slate-600">precision</span>
+              <span className="text-stone-400 dark:text-stone-600">precision</span>
             </h2>
           </div>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-md">
+          <p className="text-lg text-stone-600 dark:text-stone-400 max-w-md">
             Each project is a unique exploration of form and function, designed to push boundaries.
           </p>
         </div>
@@ -289,18 +289,18 @@ function WorkSection() {
             <div
               key={work.num}
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
-              className="group relative rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 hover:border-violet-500/50 transition-all duration-500"
+              className="group relative rounded-3xl overflow-hidden bg-stone-100 dark:bg-stone-900 border border-stone-200/50 dark:border-stone-800 hover:border-[#7c3aed]/50 transition-all duration-500"
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <video autoPlay loop muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                   <source src={work.video} type="video/mp4" />
                 </video>
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent" />
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-6">
-                <span className="text-violet-400 text-sm font-mono mb-2 block">{work.num}</span>
+                <span className="text-[#a78bfa] text-sm font-mono mb-2 block">{work.num}</span>
                 <h3 className="text-2xl font-bold text-white mb-2">{work.title}</h3>
-                <p className="text-slate-400 text-sm">{work.desc}</p>
+                <p className="text-stone-400 text-sm">{work.desc}</p>
               </div>
               <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,23 +333,23 @@ function ProcessSection() {
   }, []);
 
   const steps = [
-    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", gradient: "from-violet-500 to-purple-600" },
-    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", gradient: "from-purple-500 to-pink-600" },
-    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", gradient: "from-pink-500 to-rose-600" },
-    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", gradient: "from-rose-500 to-orange-600" },
+    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", gradient: "from-[#7c3aed] to-[#a78bfa]" },
+    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", gradient: "from-[#a78bfa] to-[#c4b5fd]" },
+    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", gradient: "from-[#7c3aed] to-[#5b21b6]" },
+    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", gradient: "from-[#5b21b6] to-[#7c3aed]" },
   ];
 
   return (
-    <section ref={sectionRef} id="process" className="py-32 relative overflow-hidden bg-slate-50 dark:bg-slate-900">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]" />
+    <section ref={sectionRef} id="process" className="py-32 relative overflow-hidden bg-stone-50 dark:bg-stone-900">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.06),transparent_70%)]" />
       
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="text-center mb-24">
-          <span className="text-sm font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-4 block">Our Process</span>
+          <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Our Process</span>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
             From concept to
             <br />
-            <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">production</span>
+            <span className="bg-gradient-to-r from-[#7c3aed] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">production</span>
           </h2>
         </div>
 
@@ -358,7 +358,7 @@ function ProcessSection() {
             <div
               key={step.num}
               ref={(el) => { if (el) stepsRef.current[i] = el; }}
-              className="group relative p-8 lg:p-12 rounded-3xl bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-violet-500/30 transition-all duration-500 overflow-hidden"
+              className="group relative p-8 lg:p-12 rounded-3xl bg-white/80 dark:bg-stone-800/50 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 hover:border-[#7c3aed]/30 transition-all duration-500 overflow-hidden"
             >
               <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${step.gradient} scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left`} />
               
@@ -368,10 +368,10 @@ function ProcessSection() {
                 </span>
                 <div className="flex-1">
                   <h3 className="text-3xl lg:text-4xl font-bold mb-4">{step.title}</h3>
-                  <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl">{step.desc}</p>
+                  <p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl">{step.desc}</p>
                 </div>
-                <div className="hidden lg:flex w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 items-center justify-center group-hover:bg-violet-500 transition-colors duration-500">
-                  <svg className="w-6 h-6 text-slate-400 group-hover:text-white transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="hidden lg:flex w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-700 items-center justify-center group-hover:bg-[#7c3aed] transition-colors duration-500">
+                  <svg className="w-6 h-6 text-stone-400 group-hover:text-white transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </div>
@@ -407,13 +407,13 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section ref={sectionRef} className="py-32 relative overflow-hidden bg-white dark:bg-slate-950">
+    <section ref={sectionRef} className="py-32 relative overflow-hidden bg-white dark:bg-stone-950">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-20">
-          <span className="text-sm font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-4 block">Testimonials</span>
+          <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Testimonials</span>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
             Trusted by
-            <span className="text-slate-400 dark:text-slate-600"> leaders</span>
+            <span className="text-stone-400 dark:text-stone-600"> leaders</span>
           </h2>
         </div>
 
@@ -427,13 +427,13 @@ function TestimonialsSection() {
             >
               <div className="absolute inset-0">
                 <Image src={t.image} alt={t.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/70 to-stone-950/20" />
               </div>
               <div className="relative p-8 pt-56">
                 <p className="text-lg text-white/90 leading-relaxed mb-8">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-violet-500/20 backdrop-blur-sm flex items-center justify-center">
-                    <span className="text-violet-400 font-bold">{t.name[0]}</span>
+                  <div className="w-12 h-12 rounded-full bg-[#7c3aed]/20 backdrop-blur-sm flex items-center justify-center">
+                    <span className="text-[#a78bfa] font-bold">{t.name[0]}</span>
                   </div>
                   <div>
                     <p className="font-bold text-white">{t.name}</p>
@@ -472,21 +472,21 @@ function PricingSection() {
   ];
 
   return (
-    <section ref={sectionRef} id="pricing" className="py-32 relative overflow-hidden bg-slate-50 dark:bg-slate-900">
+    <section ref={sectionRef} id="pricing" className="py-32 relative overflow-hidden bg-stone-50 dark:bg-stone-900">
       <div className="absolute inset-0">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-5">
           <source src="/assets/12981875_2160_4096_60fps.mp4" type="video/mp4" />
         </video>
       </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-50 dark:from-slate-900 via-transparent to-slate-50 dark:to-slate-900" />
+      <div className="absolute inset-0 bg-gradient-to-b from-stone-50 dark:from-stone-900 via-transparent to-stone-50 dark:to-stone-900" />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="text-center mb-20">
-          <span className="text-sm font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-4 block">Pricing</span>
+          <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Pricing</span>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
             Simple, transparent
             <br />
-            <span className="text-slate-400 dark:text-slate-600">pricing</span>
+            <span className="text-stone-400 dark:text-stone-600">pricing</span>
           </h2>
         </div>
 
@@ -497,26 +497,26 @@ function PricingSection() {
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
               className={`relative p-8 rounded-3xl backdrop-blur-xl transition-all duration-500 hover:scale-105 ${
                 plan.featured
-                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-2 border-violet-500 shadow-2xl shadow-violet-500/20 lg:-mt-4 lg:mb-4"
-                  : "bg-white/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50"
+                  ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 border-2 border-[#7c3aed] shadow-2xl shadow-[#7c3aed]/20 lg:-mt-4 lg:mb-4"
+                  : "bg-white/80 dark:bg-stone-800/50 border border-stone-200/50 dark:border-stone-700/50"
               }`}
             >
               {plan.featured && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-violet-500 text-white text-sm font-medium">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#7c3aed] text-white text-sm font-medium">
                   Most Popular
                 </div>
               )}
-              <p className={`text-sm font-semibold uppercase tracking-widest mb-4 ${plan.featured ? "text-violet-300 dark:text-violet-600" : "text-slate-500"}`}>
+              <p className={`text-sm font-semibold uppercase tracking-widest mb-4 ${plan.featured ? "text-[#a78bfa] dark:text-[#7c3aed]" : "text-stone-500"}`}>
                 {plan.name}
               </p>
               <div className="mb-8">
                 <span className="text-5xl font-bold">{plan.price}</span>
-                <span className={plan.featured ? "text-white/60 dark:text-slate-600" : "text-slate-500"}>{plan.period}</span>
+                <span className={plan.featured ? "text-white/60 dark:text-stone-600" : "text-stone-500"}>{plan.period}</span>
               </div>
-              <ul className={`space-y-4 mb-8 ${plan.featured ? "text-white/90 dark:text-slate-700" : "text-slate-600 dark:text-slate-400"}`}>
+              <ul className={`space-y-4 mb-8 ${plan.featured ? "text-white/90 dark:text-stone-700" : "text-stone-600 dark:text-stone-400"}`}>
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <span className={plan.featured ? "text-violet-400 dark:text-violet-600" : "text-violet-500"}>✓</span>
+                    <span className={plan.featured ? "text-[#a78bfa] dark:text-[#7c3aed]" : "text-[#7c3aed]"}>✓</span>
                     {f}
                   </li>
                 ))}
@@ -524,8 +524,8 @@ function PricingSection() {
               <Link href="/workflow">
                 <Button className={`w-full h-12 rounded-full font-medium ${
                   plan.featured
-                    ? "bg-white text-slate-900 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
-                    : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                    ? "bg-white text-stone-900 hover:bg-stone-100 dark:bg-stone-900 dark:text-white dark:hover:bg-stone-800"
+                    : "bg-stone-900 text-white hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100"
                 }`}>
                   {plan.cta}
                 </Button>
@@ -553,27 +553,27 @@ function CTASection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-32 bg-white dark:bg-slate-950">
+    <section ref={sectionRef} className="py-32 bg-white dark:bg-stone-950">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div ref={contentRef} className="relative rounded-[2.5rem] overflow-hidden">
           <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
             <source src="/assets/12575318_3840_2160_30fps.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-slate-950/80" />
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 to-purple-600/30" />
+          <div className="absolute inset-0 bg-stone-950/80" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/30 to-[#a78bfa]/30" />
 
           <div className="relative z-10 p-12 lg:p-24 text-center">
             <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-6 text-white">
               Ready to start
               <br />
-              <span className="text-violet-300">your project?</span>
+              <span className="text-[#a78bfa]">your project?</span>
             </h2>
             <p className="text-xl lg:text-2xl text-white/70 mb-12 max-w-2xl mx-auto">
               Let&apos;s build something extraordinary together.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <Link href="/workflow">
-                <Button size="lg" className="h-16 px-10 rounded-full bg-white text-slate-900 hover:bg-slate-100 shadow-2xl group">
+                <Button size="lg" className="h-16 px-10 rounded-full bg-white text-stone-900 hover:bg-stone-100 shadow-2xl group">
                   Start your project
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -595,36 +595,36 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="py-20 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+    <footer className="py-20 bg-stone-50 dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid lg:grid-cols-4 gap-12 mb-16">
           <div className="lg:col-span-2">
             <Logo size="lg" animated={false} />
-            <p className="text-slate-600 dark:text-slate-400 mt-4 max-w-md">
+            <p className="text-stone-600 dark:text-stone-400 mt-4 max-w-md">
               Crafting digital architecture for modern teams. From concept to production, we build systems that scale.
             </p>
           </div>
 
           <div className="space-y-4">
             <p className="font-semibold">Product</p>
-            <a href="#work" className="block text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Work</a>
-            <a href="#process" className="block text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Process</a>
-            <a href="#pricing" className="block text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Pricing</a>
+            <a href="#work" className="block text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">Work</a>
+            <a href="#process" className="block text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">Process</a>
+            <a href="#pricing" className="block text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">Pricing</a>
           </div>
 
           <div className="space-y-4">
             <p className="font-semibold">Connect</p>
-            <a href="#" className="block text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">GitHub</a>
-            <a href="#" className="block text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Twitter</a>
-            <a href="mailto:hello@architex.dev" className="block text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">hello@architex.dev</a>
+            <a href="#" className="block text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">GitHub</a>
+            <a href="#" className="block text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">Twitter</a>
+            <a href="mailto:hello@architex.dev" className="block text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">hello@architex.dev</a>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+        <div className="pt-8 border-t border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-stone-500">
           <span>&copy; {new Date().getFullYear()} Architex. All rights reserved.</span>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms</a>
+            <a href="#" className="hover:text-stone-900 dark:hover:text-white transition-colors">Privacy</a>
+            <a href="#" className="hover:text-stone-900 dark:hover:text-white transition-colors">Terms</a>
           </div>
         </div>
       </div>
