@@ -15,7 +15,9 @@ from services.gemini import gemini_service
 from services.github import get_github_service
 from services.cline import cline_service
 from services.socket_manager import socket_manager
-from database.mongodb import MongoDB
+from database.mongo import get_db
+from repos import jobs_repo, users_repo, projects_repo
+from schemas.common import get_utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -26,26 +28,30 @@ class JobWorker:
         self.workspace_base = Path("/tmp/architex_jobs")
         self.workspace_base.mkdir(exist_ok=True)
     
-    async def process_job(self, job_id: str, db: MongoDB):
+    async def process_job(self, job_id: str, db):
         """
         Initial job processing: Generate architecture plan but wait for approval
+        job_id is the jobId field (UUID string)
         """
         try:
             logger.info(f"Processing job {job_id}")
             
-            # Fetch job
-            job = await db.jobs.find_one({"_id": job_id})
+            # Fetch job - need userId, so query by jobId
+            db_instance = get_db()
+            job = await db_instance.jobs.find_one({"jobId": job_id})
             if not job:
                 logger.error(f"Job {job_id} not found")
                 return
             
-            # Update status to running
-            await db.jobs.update_one(
-                {"_id": job_id},
-                {"$set": {"status": "generating", "updated_at": datetime.utcnow()}}
-            )
+            userId = job.get("userId")
+            if not userId:
+                logger.error(f"Job {job_id} missing userId")
+                return
+            
+            # Update status to generating
+            await jobs_repo.update_job_status(userId, job_id, "generating")
             await socket_manager.emit_status("generating", job_id)
-            await self._emit_log(job_id, "Analyzing architecture requirements...", db)
+            await self._emit_log(userId, job_id, "Analyzing architecture requirements...")
             
             # Run agent to generate code plan
             architecture_spec = job.get("architecture_spec", {})
@@ -61,8 +67,8 @@ class JobWorker:
             
             # Generate code using Gemini AI
             prompt = self._convert_graph_to_prompt(architecture_spec)
-            await self._emit_log(job_id, "Translating graph to prompt...", db)
-            await self._emit_log(job_id, "Consulting Gemini AI...", db)
+            await self._emit_log(userId, job_id, "Translating graph to prompt...")
+            await self._emit_log(userId, job_id, "Consulting Gemini AI...")
             
             generated_content = await gemini_service.generate_architecture(prompt)
             
@@ -77,49 +83,57 @@ class JobWorker:
             plan = json.loads(content_str)
             
             # Save the plan to the job and set status to waiting_review
-            await db.jobs.update_one(
-                {"_id": job_id},
+            db_instance = get_db()
+            await db_instance.jobs.update_one(
+                {"jobId": job_id},
                 {
                     "$set": {
                         "status": "waiting_review",
-                        "updated_at": datetime.utcnow(),
+                        "updatedAt": get_utc_now(),
                         "generation_result": plan # Store the plan here
                     }
                 }
             )
             
             await socket_manager.emit_status("waiting_review", job_id)
-            await self._emit_log(job_id, "Architecture generated. Waiting for approval.", db)
-            await self._emit_log(job_id, "REVIEW_REQUIRED", db) # Signal for frontend
+            await self._emit_log(userId, job_id, "Architecture generated. Waiting for approval.")
+            await self._emit_log(userId, job_id, "REVIEW_REQUIRED") # Signal for frontend
             
         except Exception as e:
             logger.error(f"Job {job_id} generation failed: {str(e)}")
             await socket_manager.emit_status("failed", job_id)
-            await self._emit_log(job_id, f"Generation failed: {str(e)}", db)
-            await db.jobs.update_one(
-                {"_id": job_id},
-                {"$set": {"status": "failed", "error": str(e)}}
-            )
+            
+            # Get userId for logging
+            db_instance = get_db()
+            job = await db_instance.jobs.find_one({"jobId": job_id})
+            userId = job.get("userId") if job else None
+            
+            if userId:
+                await self._emit_log(userId, job_id, f"Generation failed: {str(e)}")
+                await jobs_repo.update_job_status(userId, job_id, "failed", error=str(e))
 
-    async def execute_plan(self, job_id: str, db: MongoDB):
+    async def execute_plan(self, job_id: str, db):
         """
         Execute the approved plan: Write files and push to Git
+        job_id is the jobId field (UUID string)
         """
         try:
-            job = await db.jobs.find_one({"_id": job_id})
+            db_instance = get_db()
+            job = await db_instance.jobs.find_one({"jobId": job_id})
             if not job or not job.get("generation_result"):
                 raise Exception("Job plan not found")
 
+            userId = job.get("userId")
+            if not userId:
+                raise Exception("Job missing userId")
+
             # Update status
-            await db.jobs.update_one(
-                {"_id": job_id},
-                {"$set": {"status": "executing", "updated_at": datetime.utcnow()}}
-            )
+            await jobs_repo.update_job_status(userId, job_id, "executing")
             await socket_manager.emit_status("executing", job_id)
-            await self._emit_log(job_id, "Plan approved. Starting execution...", db)
+            await self._emit_log(userId, job_id, "Plan approved. Starting execution...")
 
             # Get user
-            user = await db.users.find_one({"_id": job["user_id"]})
+            user = await users_repo.get_user(userId)
             if not user:
                 raise Exception("User not found")
 
@@ -136,41 +150,39 @@ class JobWorker:
             
             # Commit
             self._commit_changes(workspace_path, "Initial commit from Architex")
-            await self._emit_log(job_id, "Code committed to local git", db)
+            await self._emit_log(userId, job_id, "Code committed to local git")
             
             # Push
-            project_id = job.get("project_id")
+            project_id = job.get("projectId")
             if project_id:
-                project = await db.projects.find_one({"_id": project_id})
+                project = await projects_repo.get_project(userId, project_id)
                 if project and project.get("repository_url"):
-                    await self._emit_log(job_id, f"Pushing to {project['repository_url']}...", db)
+                    await self._emit_log(userId, job_id, f"Pushing to {project['repository_url']}...")
                     self._push_to_github(
                         workspace_path,
                         project["repository_url"],
                         user["github_access_token"]
                     )
                     
-                    await db.projects.update_one(
-                        {"_id": project_id},
-                        {"$set": {"status": "done", "last_updated": datetime.utcnow()}}
-                    )
+                    await projects_repo.touch_project_last_updated(userId, project_id)
 
             # Complete
-            await db.jobs.update_one(
-                {"_id": job_id},
-                {"$set": {"status": "done", "completed_at": datetime.utcnow()}}
-            )
+            await jobs_repo.update_job_status(userId, job_id, "done")
             await socket_manager.emit_status("done", job_id)
-            await self._emit_log(job_id, "Deployment complete!", db)
+            await self._emit_log(userId, job_id, "Deployment complete!")
 
         except Exception as e:
             logger.error(f"Job {job_id} execution failed: {str(e)}")
             await socket_manager.emit_status("failed", job_id)
-            await self._emit_log(job_id, f"Execution failed: {str(e)}", db)
-            await db.jobs.update_one(
-                {"_id": job_id},
-                {"$set": {"status": "failed", "error": str(e)}}
-            )
+            
+            # Get userId for logging
+            db_instance = get_db()
+            job = await db_instance.jobs.find_one({"jobId": job_id})
+            userId = job.get("userId") if job else None
+            
+            if userId:
+                await self._emit_log(userId, job_id, f"Execution failed: {str(e)}")
+                await jobs_repo.update_job_status(userId, job_id, "failed", error=str(e))
             
             # Clean up
             if (self.workspace_base / job_id).exists():
@@ -221,20 +233,20 @@ class JobWorker:
         
         logger.info(f"Agent completed for job {job_id}")
     
-    async def _emit_log(self, job_id: str, message: str, db: MongoDB):
+    async def _emit_log(self, userId: str, job_id: str, message: str, level: str = "info"):
         """Emit log to socket and persist to database"""
         try:
-            timestamp = datetime.utcnow().isoformat()
-            log_entry = {"timestamp": timestamp, "message": message}
+            log_entry = {
+                "ts": get_utc_now(),
+                "level": level,
+                "message": message
+            }
             
             # Emit via socket
             await socket_manager.emit_log(message, job_id)
             
-            # Persist to DB
-            await db.jobs.update_one(
-                {"_id": job_id},
-                {"$push": {"logs": log_entry}}
-            )
+            # Persist to DB using repo
+            await jobs_repo.append_job_logs(userId, job_id, [log_entry])
         except Exception as e:
             logger.error(f"Failed to emit/persist log: {e}")
 

@@ -8,11 +8,14 @@ import os
 from dotenv import load_dotenv
 import httpx
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 import uuid
 
-from database.mongodb import MongoDB, init_db, close_db
+from config import settings
+from database.mongo import init_mongo, close_mongo, get_db
+from database.indexes import ensure_indexes
+from repos import users_repo, projects_repo, jobs_repo
 from services.gemini import gemini_service
 from services.github import get_github_service
 from services.cline import cline_service
@@ -29,13 +32,14 @@ app = FastAPI(title="Architex API", version="1.0.0")
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on startup"""
-    await init_db()
-    logger.info("Database connected")
+    await init_mongo()
+    await ensure_indexes()
+    logger.info("Database connected and indexes ensured")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database connection on shutdown"""
-    await close_db()
+    await close_mongo()
     logger.info("Database connection closed")
 
 # CORS configuration
@@ -47,14 +51,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuration
-GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
-GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
-GITHUB_CALLBACK_URL = os.getenv("GITHUB_CALLBACK_URL")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24
+# Configuration - use settings from config module
+GITHUB_CLIENT_ID = settings.github_client_id
+GITHUB_CLIENT_SECRET = settings.github_client_secret
+GITHUB_CALLBACK_URL = settings.github_callback_url
+FRONTEND_URL = settings.frontend_url
+JWT_SECRET = settings.jwt_secret
+JWT_ALGORITHM = settings.jwt_algorithm
+JWT_EXPIRATION_HOURS = settings.jwt_expiration_hours
 
 # Pydantic models
 class ArchitectureSpec(BaseModel):
@@ -88,9 +92,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+        expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
@@ -115,23 +119,8 @@ async def get_current_user(authorization: str = Header(None)):
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
     
-    db = MongoDB.get_database()
-    user = await db.users.find_one({"_id": user_id})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return user
-    
-    token = authorization.replace("Bearer ", "")
-    payload = verify_token(token)
-    user_id = payload.get("sub")
-    
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-    
-    db = MongoDB.get_database()
-    user = await db.users.find_one({"_id": user_id})
+    # Use repo to get user
+    user = await users_repo.get_user(user_id)
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -147,7 +136,7 @@ async def root():
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 # Authentication endpoints
 @app.get("/api/auth/github")
@@ -197,27 +186,14 @@ async def github_oauth_callback(code: str):
         
         user_data = user_response.json()
         
-        # Store user in database
-        db = MongoDB.get_database()
+        # Store user in database using repo
         user_id = str(user_data["id"])
-        
-        user_doc = {
-            "_id": user_id,
-            "github_id": user_data["id"],
-            "username": user_data["login"],
-            "name": user_data.get("name", ""),
-            "email": user_data.get("email", ""),
-            "avatar_url": user_data.get("avatar_url", ""),
-            "github_access_token": access_token,
-            "updated_at": datetime.utcnow(),
-        }
-        
-        existing_user = await db.users.find_one({"_id": user_id})
-        if existing_user:
-            await db.users.update_one({"_id": user_id}, {"$set": user_doc})
-        else:
-            user_doc["created_at"] = datetime.utcnow()
-            await db.users.insert_one(user_doc)
+        await users_repo.upsert_user(
+            userId=user_id,
+            github_access_token=access_token,
+            email=user_data.get("email"),
+            name=user_data.get("name")
+        )
         
         # Create JWT token
         jwt_token = create_access_token(data={"sub": user_id})
@@ -262,27 +238,14 @@ async def github_auth_exchange(request: GitHubAuthRequest):
         
         user_data = user_response.json()
         
-        # Store user in database
-        db = MongoDB.get_database()
+        # Store user in database using repo
         user_id = str(user_data["id"])
-        
-        user_doc = {
-            "_id": user_id,
-            "github_id": user_data["id"],
-            "username": user_data["login"],
-            "name": user_data.get("name", ""),
-            "email": user_data.get("email", ""),
-            "avatar_url": user_data.get("avatar_url", ""),
-            "github_access_token": access_token,
-            "updated_at": datetime.utcnow(),
-        }
-        
-        existing_user = await db.users.find_one({"_id": user_id})
-        if existing_user:
-            await db.users.update_one({"_id": user_id}, {"$set": user_doc})
-        else:
-            user_doc["created_at"] = datetime.utcnow()
-            await db.users.insert_one(user_doc)
+        await users_repo.upsert_user(
+            userId=user_id,
+            github_access_token=access_token,
+            email=user_data.get("email"),
+            name=user_data.get("name")
+        )
         
         # Create JWT token
         jwt_token = create_access_token(data={"sub": user_id})
@@ -298,21 +261,21 @@ async def github_auth_exchange(request: GitHubAuthRequest):
 @app.get("/api/projects")
 async def get_projects(user: dict = Depends(get_current_user)):
     """Get all projects for the current user"""
-    db = MongoDB.get_database()
-    projects = []
+    userId = user.get("userId") or user.get("_id")
+    projects = await projects_repo.list_projects(userId)
     
-    async for project in db.projects.find({"user_id": user["_id"]}):
-        projects.append({
-            "id": project["_id"],
-            "name": project["name"],
-            "description": project["description"],
-            "repository_url": project.get("repository_url"),
-            "status": project.get("status", "pending"),
-            "last_updated": project.get("last_updated", project.get("updated_at")).isoformat(),
-            "created_at": project["created_at"].isoformat(),
-        })
-    
-    return projects
+    return [
+        {
+            "projectId": p["projectId"],
+            "name": p["project_name"],
+            "description": p.get("description"),
+            "repository_url": p.get("repository_url"),
+            "last_updated": p["last_updated"].isoformat() if isinstance(p["last_updated"], datetime) else p["last_updated"],
+            "createdAt": p["createdAt"].isoformat() if isinstance(p["createdAt"], datetime) else p["createdAt"],
+            "updatedAt": p["updatedAt"].isoformat() if isinstance(p["updatedAt"], datetime) else p["updatedAt"],
+        }
+        for p in projects
+    ]
 
 @app.post("/api/projects")
 async def create_project(
@@ -320,27 +283,44 @@ async def create_project(
     user: dict = Depends(get_current_user)
 ):
     """Create a new project"""
-    db = MongoDB.get_database()
-    project_id = str(uuid.uuid4())
+    userId = user.get("userId") or user.get("_id")
     
-    project_doc = {
-        "_id": project_id,
-        "user_id": user["_id"],
-        "name": project.name,
-        "description": project.description,
-        "repository_url": project.repository_url,
-        "status": "pending",
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
-    
-    await db.projects.insert_one(project_doc)
+    project_doc = await projects_repo.create_project(
+        userId=userId,
+        project_name=project.name,
+        description=project.description,
+        repository_url=project.repository_url
+    )
     
     return {
-        "id": project_id,
-        "name": project.name,
-        "description": project.description,
-        "status": "pending"
+        "projectId": project_doc["projectId"],
+        "name": project_doc["project_name"],
+        "description": project_doc.get("description"),
+        "repository_url": project_doc.get("repository_url"),
+        "last_updated": project_doc["last_updated"].isoformat() if isinstance(project_doc["last_updated"], datetime) else project_doc["last_updated"],
+        "createdAt": project_doc["createdAt"].isoformat() if isinstance(project_doc["createdAt"], datetime) else project_doc["createdAt"],
+    }
+
+@app.get("/api/projects/{project_id}")
+async def get_project(
+    project_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Get a specific project"""
+    userId = user.get("userId") or user.get("_id")
+    project = await projects_repo.get_project(userId, project_id)
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return {
+        "projectId": project["projectId"],
+        "name": project["project_name"],
+        "description": project.get("description"),
+        "repository_url": project.get("repository_url"),
+        "last_updated": project["last_updated"].isoformat() if isinstance(project["last_updated"], datetime) else project["last_updated"],
+        "createdAt": project["createdAt"].isoformat() if isinstance(project["createdAt"], datetime) else project["createdAt"],
+        "updatedAt": project["updatedAt"].isoformat() if isinstance(project["updatedAt"], datetime) else project["updatedAt"],
     }
 
 # Job endpoints
@@ -354,28 +334,23 @@ async def create_job(
     Create a new architecture generation job
     Job is queued and processed asynchronously in background
     """
-    db = MongoDB.get_database()
-    job_id = str(uuid.uuid4())
+    userId = user.get("userId") or user.get("_id")
     
-    # Create job document
-    job_doc = {
-        "_id": job_id,
-        "user_id": user["_id"],
-        "project_id": job_request.project_id,
-        "architecture_spec": job_request.architecture_spec.dict(),
-        "status": "pending",
-        "logs": [], # Initialize empty logs array
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
+    # Create job using repo
+    job_doc = await jobs_repo.create_job(
+        userId=userId,
+        projectId=job_request.project_id,
+        architecture_spec=job_request.architecture_spec.dict()
+    )
     
-    await db.jobs.insert_one(job_doc)
+    job_id = job_doc["jobId"]
+    db = get_db()
     
     # Queue background job processing
     background_tasks.add_task(job_worker.process_job, job_id, db)
     
     return {
-        "job_id": job_id,
+        "jobId": job_id,
         "status": "pending",
         "message": "Job queued for processing"
     }
@@ -389,21 +364,21 @@ async def get_job_status(
     Get job status (for polling)
     Frontend polls this endpoint every 2-5 seconds to check status
     """
-    db = MongoDB.get_database()
-    job = await db.jobs.find_one({"_id": job_id, "user_id": user["_id"]})
+    userId = user.get("userId") or user.get("_id")
+    job = await jobs_repo.get_job(userId, job_id)
     
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
     response = {
-        "job_id": job["_id"],
+        "jobId": job["jobId"],
         "status": job["status"],
-        "created_at": job["created_at"].isoformat(),
-        "updated_at": job["updated_at"].isoformat(),
+        "createdAt": job["createdAt"].isoformat() if isinstance(job["createdAt"], datetime) else job["createdAt"],
+        "updatedAt": job["updatedAt"].isoformat() if isinstance(job["updatedAt"], datetime) else job["updatedAt"],
     }
     
-    if job.get("completed_at"):
-        response["completed_at"] = job["completed_at"].isoformat()
+    if job.get("completedAt"):
+        response["completedAt"] = job["completedAt"].isoformat() if isinstance(job["completedAt"], datetime) else job["completedAt"]
     
     if job.get("result"):
         response["result"] = job["result"]
@@ -411,9 +386,6 @@ async def get_job_status(
     if job.get("error"):
         response["error"] = job["error"]
     
-    if job.get("metadata"):
-        response["metadata"] = job["metadata"]
-        
     if job.get("logs"):
         response["logs"] = job["logs"]
     
@@ -428,8 +400,8 @@ async def approve_job(
     """
     Approve a pending job for execution
     """
-    db = MongoDB.get_database()
-    job = await db.jobs.find_one({"_id": job_id, "user_id": user["_id"]})
+    userId = user.get("userId") or user.get("_id")
+    job = await jobs_repo.get_job(userId, job_id)
     
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -437,6 +409,7 @@ async def approve_job(
     if job["status"] != "waiting_review":
         raise HTTPException(status_code=400, detail="Job is not waiting for review")
     
+    db = get_db()
     # Queue background execution
     background_tasks.add_task(job_worker.execute_plan, job_id, db)
     
@@ -448,23 +421,46 @@ async def get_jobs(
     project_id: Optional[str] = None
 ):
     """Get all jobs for the current user, optionally filtered by project"""
-    db = MongoDB.get_database()
+    userId = user.get("userId") or user.get("_id")
     
-    query = {"user_id": user["_id"]}
     if project_id:
-        query["project_id"] = project_id
+        jobs = await jobs_repo.list_jobs_for_project(userId, project_id)
+    else:
+        # List all jobs for user - need to add this function or use direct query
+        db = get_db()
+        jobs = []
+        async for job in db.jobs.find({"userId": userId}).sort("createdAt", -1):
+            jobs.append(job)
     
-    jobs = []
-    async for job in db.jobs.find(query).sort("created_at", -1):
-        jobs.append({
-            "job_id": job["_id"],
-            "project_id": job.get("project_id"),
-            "status": job["status"],
-            "created_at": job["created_at"].isoformat(),
-            "updated_at": job["updated_at"].isoformat(),
-        })
+    return [
+        {
+            "jobId": j["jobId"],
+            "projectId": j.get("projectId"),
+            "status": j["status"],
+            "createdAt": j["createdAt"].isoformat() if isinstance(j["createdAt"], datetime) else j["createdAt"],
+            "updatedAt": j["updatedAt"].isoformat() if isinstance(j["updatedAt"], datetime) else j["updatedAt"],
+        }
+        for j in jobs
+    ]
+
+@app.get("/api/projects/{project_id}/jobs")
+async def get_project_jobs(
+    project_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Get all jobs for a specific project"""
+    userId = user.get("userId") or user.get("_id")
+    jobs = await jobs_repo.list_jobs_for_project(userId, project_id)
     
-    return jobs
+    return [
+        {
+            "jobId": j["jobId"],
+            "status": j["status"],
+            "createdAt": j["createdAt"].isoformat() if isinstance(j["createdAt"], datetime) else j["createdAt"],
+            "updatedAt": j["updatedAt"].isoformat() if isinstance(j["updatedAt"], datetime) else j["updatedAt"],
+        }
+        for j in jobs
+    ]
 
 if __name__ == "__main__":
     import uvicorn
