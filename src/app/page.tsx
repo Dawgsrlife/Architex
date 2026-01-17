@@ -307,14 +307,46 @@ function WorkSection() {
 function ProcessSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const stepsRef = useRef<HTMLDivElement[]>([]);
+  const lineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Progress line animation
+      gsap.fromTo(lineRef.current,
+        { scaleY: 0 },
+        { 
+          scaleY: 1, 
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 60%",
+            end: "bottom 80%",
+            scrub: true
+          }
+        }
+      );
+
       stepsRef.current.forEach((step, i) => {
-        const direction = i % 2 === 0 ? -100 : 100;
         gsap.fromTo(step,
-          { x: direction, opacity: 0 },
-          { x: 0, opacity: 1, duration: 1.2, ease: "power4.out", scrollTrigger: { trigger: step, start: "top 80%" }}
+          { 
+            y: 50, 
+            opacity: 0,
+            scale: 0.95,
+            filter: "blur(10px)"
+          },
+          { 
+            y: 0, 
+            opacity: 1, 
+            scale: 1,
+            filter: "blur(0px)",
+            duration: 1, 
+            ease: "power3.out", 
+            scrollTrigger: { 
+              trigger: step, 
+              start: "top 85%",
+              toggleActions: "play none none reverse"
+            }
+          }
         );
       });
     }, sectionRef);
@@ -322,51 +354,69 @@ function ProcessSection() {
   }, []);
 
   const steps = [
-    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", gradient: "from-[#7c3aed] to-[#a78bfa]" },
-    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", gradient: "from-[#a78bfa] to-[#c4b5fd]" },
-    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", gradient: "from-[#7c3aed] to-[#5b21b6]" },
-    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", gradient: "from-[#5b21b6] to-[#7c3aed]" },
+    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", color: "#7c3aed" },
+    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", color: "#a78bfa" },
+    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", color: "#c4b5fd" },
+    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", color: "#7c3aed" },
   ];
 
   return (
-    <section ref={sectionRef} id="process" className="py-32 relative overflow-hidden bg-stone-50 dark:bg-stone-900">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.06),transparent_70%)]" />
+    <section ref={sectionRef} id="process" className="py-48 relative overflow-hidden bg-stone-950">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#7c3aed]/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[#a78bfa]/10 blur-[100px] rounded-full pointer-events-none" />
       
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-24">
-          <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Our Process</span>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-            From concept to
-            <br />
-            <span className="bg-gradient-to-r from-[#7c3aed] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">production</span>
+        <div className="flex flex-col items-center text-center mb-32">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-900 border border-stone-800 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7c3aed]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Methodology</span>
+          </div>
+          <h2 className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6">
+            The Blueprint for<br />
+            <span className="bg-gradient-to-r from-[#7c3aed] via-[#c4b5fd] to-[#a78bfa] bg-clip-text text-transparent">Execution</span>
           </h2>
+          <p className="text-stone-400 text-lg max-w-xl mx-auto">
+            A systematic approach to building resilient, scalable, and visually stunning digital architecture.
+          </p>
         </div>
 
-        <div className="space-y-8">
-          {steps.map((step, i) => (
-            <div
-              key={step.num}
-              ref={(el) => { if (el) stepsRef.current[i] = el; }}
-              className="group relative p-8 lg:p-12 rounded-3xl bg-white/80 dark:bg-stone-800/50 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 hover:border-[#7c3aed]/30 transition-all duration-500 overflow-hidden"
-            >
-              <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${step.gradient} scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left`} />
-              
-              <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-                <span className={`text-7xl lg:text-9xl font-bold bg-gradient-to-br ${step.gradient} bg-clip-text text-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500`}>
-                  {step.num}
-                </span>
-                <div className="flex-1">
-                  <h3 className="text-3xl lg:text-4xl font-bold mb-4">{step.title}</h3>
-                  <p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl">{step.desc}</p>
+        <div className="relative max-w-4xl mx-auto">
+          {/* Vertical Progress Line */}
+          <div className="absolute left-[39px] lg:left-1/2 top-0 bottom-0 w-px bg-stone-800 -translate-x-1/2">
+            <div ref={lineRef} className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-[#7c3aed] via-[#a78bfa] to-transparent origin-top scale-y-0" />
+          </div>
+
+          <div className="space-y-24">
+            {steps.map((step, i) => (
+              <div
+                key={step.num}
+                ref={(el) => { if (el) stepsRef.current[i] = el; }}
+                className={`relative flex items-start gap-12 lg:gap-0 ${i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"}`}
+              >
+                {/* Number/Circle Container */}
+                <div className="relative z-20 flex-shrink-0 w-20 h-20 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center lg:absolute lg:left-1/2 lg:-translate-x-1/2 overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <span className="text-2xl font-bold text-white relative z-10">{step.num}</span>
+                  <div className="absolute -inset-2 bg-[#7c3aed]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
-                <div className="hidden lg:flex w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-700 items-center justify-center group-hover:bg-[#7c3aed] transition-colors duration-500">
-                  <svg className="w-6 h-6 text-stone-400 group-hover:text-white transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+
+                {/* Content Card */}
+                <div className={`flex-1 lg:w-[calc(50%-60px)] ${i % 2 === 0 ? "lg:pr-20 lg:text-right" : "lg:pl-20 lg:text-left"}`}>
+                  <div className="group relative">
+                    <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-[#a78bfa] transition-colors duration-300">{step.title}</h3>
+                    <p className="text-stone-400 text-lg leading-relaxed">{step.desc}</p>
+                    
+                    {/* Hover Glow Line */}
+                    <div className={`absolute bottom-0 h-px bg-gradient-to-r from-transparent via-[#7c3aed]/50 to-transparent transition-all duration-700 w-0 group-hover:w-full ${i % 2 === 0 ? "right-0" : "left-0"}`} />
+                  </div>
                 </div>
+
+                {/* Empty Space for alignment */}
+                <div className="hidden lg:block lg:w-[calc(50%-60px)]" />
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -461,64 +511,71 @@ function PricingSection() {
   ];
 
   return (
-    <section ref={sectionRef} id="pricing" className="py-32 relative overflow-hidden bg-stone-50 dark:bg-stone-900">
-      <div className="absolute inset-0">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-5">
-          <source src="/assets/12981875_2160_4096_60fps.mp4" type="video/mp4" />
-        </video>
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-stone-50 dark:from-stone-900 via-transparent to-stone-50 dark:to-stone-900" />
-
+    <section ref={sectionRef} id="pricing" className="py-48 relative overflow-hidden bg-stone-950">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(124,58,237,0.05),transparent_50%)]" />
+      
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-20">
-          <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Pricing</span>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-            Simple, transparent
-            <br />
-            <span className="text-stone-400 dark:text-stone-600">pricing</span>
+        <div className="text-center mb-24">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-900 border border-stone-800 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7c3aed]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Flexible Plans</span>
+          </div>
+          <h2 className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6">
+            Scale with<br />
+            <span className="text-stone-500">Confidence</span>
           </h2>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8" style={{ perspective: "1000px" }}>
+        <div className="grid lg:grid-cols-3 gap-8" style={{ perspective: "2000px" }}>
           {plans.map((plan, i) => (
             <div
               key={plan.name}
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
-              className={`relative p-8 rounded-3xl backdrop-blur-xl transition-all duration-500 hover:scale-105 ${
+              className={`relative p-10 rounded-[2rem] backdrop-blur-xl transition-all duration-500 group overflow-hidden ${
                 plan.featured
-                  ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 border-2 border-[#7c3aed] shadow-2xl shadow-[#7c3aed]/20 lg:-mt-4 lg:mb-4"
-                  : "bg-white/80 dark:bg-stone-800/50 border border-stone-200/50 dark:border-stone-700/50"
+                  ? "bg-stone-900/50 border-2 border-[#7c3aed]/50 shadow-[0_0_50px_-12px_rgba(124,58,237,0.3)] lg:-mt-4 lg:mb-4"
+                  : "bg-stone-900/30 border border-stone-800 hover:border-stone-700"
               }`}
             >
               {plan.featured && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#7c3aed] text-white text-sm font-medium">
-                  Most Popular
-                </div>
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#7c3aed] to-transparent" />
               )}
-              <p className={`text-sm font-semibold uppercase tracking-widest mb-4 ${plan.featured ? "text-[#a78bfa] dark:text-[#7c3aed]" : "text-stone-500"}`}>
-                {plan.name}
-              </p>
-              <div className="mb-8">
-                <span className="text-5xl font-bold">{plan.price}</span>
-                <span className={plan.featured ? "text-white/60 dark:text-stone-600" : "text-stone-500"}>{plan.period}</span>
+              
+              <div className="relative z-10">
+                <p className={`text-xs font-bold uppercase tracking-[0.2em] mb-8 ${plan.featured ? "text-[#a78bfa]" : "text-stone-500"}`}>
+                  {plan.name}
+                </p>
+                <div className="mb-10">
+                  <span className="text-6xl font-bold text-white">{plan.price}</span>
+                  <span className="text-stone-500 ml-2">{plan.period}</span>
+                </div>
+                
+                <ul className="space-y-5 mb-12">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-center gap-3 text-stone-300">
+                      <div className="w-5 h-5 rounded-full bg-[#7c3aed]/10 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-[#a78bfa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href="/workflow">
+                  <Button className={`w-full h-14 rounded-2xl font-bold text-sm transition-all duration-300 ${
+                    plan.featured
+                      ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9] shadow-lg shadow-[#7c3aed]/25 hover:shadow-[#7c3aed]/40 hover:-translate-y-1"
+                      : "bg-white text-stone-900 hover:bg-stone-100 hover:-translate-y-1"
+                  }`}>
+                    {plan.cta}
+                  </Button>
+                </Link>
               </div>
-              <ul className={`space-y-4 mb-8 ${plan.featured ? "text-white/90 dark:text-stone-700" : "text-stone-600 dark:text-stone-400"}`}>
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <span className={plan.featured ? "text-[#a78bfa] dark:text-[#7c3aed]" : "text-[#7c3aed]"}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/workflow">
-                <Button className={`w-full h-12 rounded-full font-medium ${
-                  plan.featured
-                    ? "bg-white text-stone-900 hover:bg-stone-100 dark:bg-stone-900 dark:text-white dark:hover:bg-stone-800"
-                    : "bg-stone-900 text-white hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100"
-                }`}>
-                  {plan.cta}
-                </Button>
-              </Link>
+
+              {/* Background Glow on Hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           ))}
         </div>
