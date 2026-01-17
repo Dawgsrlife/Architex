@@ -181,9 +181,9 @@ export default function DashboardPage() {
                     <p className="text-primary-foreground/70 mb-4 max-w-md">
                       Get unlimited AI generations, advanced templates, and priority support.
                     </p>
-                    <Button className="bg-white text-primary hover:bg-white/90">
-                      Upgrade now
-                    </Button>
+<Button className="bg-[#C4A77D] text-white hover:bg-[#B39770]">
+                        Upgrade now
+                      </Button>
                   </div>
                   <div className="hidden sm:block w-24 h-24 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center">
                     <svg className="w-12 h-12 text-[#C4A77D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
