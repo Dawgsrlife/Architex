@@ -147,38 +147,93 @@ function HeroSection() {
 
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement[]>([]);
+  const numbersRef = useRef<HTMLSpanElement[]>([]);
+  const linesRef = useRef<HTMLDivElement[]>([]);
+  const iconsRef = useRef<HTMLDivElement[]>([]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".how-title",
-        { y: 80, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 80%",
-          },
-        }
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 70%",
+          end: "bottom 20%",
+          toggleActions: "play none none reverse",
+        },
+      });
+
+      tl.fromTo(
+        titleRef.current,
+        { y: 100, opacity: 0, scale: 0.9 },
+        { y: 0, opacity: 1, scale: 1, duration: 1, ease: "power4.out" }
       );
 
       stepsRef.current.forEach((step, i) => {
-        gsap.fromTo(
-          step,
-          { x: i % 2 === 0 ? -100 : 100, opacity: 0 },
-          {
-            x: 0,
-            opacity: 1,
-            duration: 1,
-            scrollTrigger: {
-              trigger: step,
-              start: "top 85%",
+        const stepTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: step,
+            start: "top 80%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        stepTl
+          .fromTo(
+            step,
+            { 
+              opacity: 0, 
+              x: i % 2 === 0 ? -150 : 150,
+              rotateY: i % 2 === 0 ? -15 : 15,
             },
-          }
-        );
+            { 
+              opacity: 1, 
+              x: 0, 
+              rotateY: 0,
+              duration: 1.2, 
+              ease: "power4.out" 
+            }
+          )
+          .fromTo(
+            numbersRef.current[i],
+            { scale: 0, rotation: -180 },
+            { scale: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)" },
+            "-=0.8"
+          )
+          .fromTo(
+            iconsRef.current[i],
+            { scale: 0, y: 20 },
+            { scale: 1, y: 0, duration: 0.6, ease: "back.out(2)" },
+            "-=0.4"
+          );
+
+        if (linesRef.current[i]) {
+          gsap.fromTo(
+            linesRef.current[i],
+            { scaleY: 0 },
+            {
+              scaleY: 1,
+              duration: 0.8,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: step,
+                start: "bottom 70%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+
+        gsap.to(step, {
+          y: -10,
+          scrollTrigger: {
+            trigger: step,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1,
+          },
+        });
       });
     }, sectionRef);
 
@@ -190,46 +245,97 @@ function HowItWorksSection() {
       num: "01",
       title: "Describe your vision",
       desc: "Tell us what you want to build in plain English. Our AI understands context, constraints, and best practices.",
-      gradient: "from-blue-500/20 to-cyan-500/20",
+      gradient: "from-blue-500 to-cyan-500",
+      bgGradient: "from-blue-500/10 to-cyan-500/10",
+      icon: (
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
     },
     {
       num: "02",
       title: "Watch it come alive",
       desc: "See your architecture visualized in real-time. Drag, drop, and refine until it's perfect.",
-      gradient: "from-purple-500/20 to-pink-500/20",
+      gradient: "from-purple-500 to-pink-500",
+      bgGradient: "from-purple-500/10 to-pink-500/10",
+      icon: (
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
     },
     {
       num: "03",
       title: "Ship with confidence",
       desc: "Export production-ready code. TypeScript, tested, documented, and following your conventions.",
-      gradient: "from-orange-500/20 to-red-500/20",
+      gradient: "from-orange-500 to-red-500",
+      bgGradient: "from-orange-500/10 to-red-500/10",
+      icon: (
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      ),
     },
   ];
 
   return (
-    <section ref={sectionRef} id="how-it-works" className="py-32 lg:py-40 relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
-        <div className="how-title text-center mb-24">
+    <section ref={sectionRef} id="how-it-works" className="py-32 lg:py-48 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
+      <div className="absolute top-1/2 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2" />
+      <div className="absolute top-1/2 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2" />
+      
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
+        <div ref={titleRef} className="text-center mb-32">
           <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-4">How it works</p>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-            Three steps to production
+          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight">
+            Three steps to
+            <br />
+            <span className="bg-gradient-to-r from-accent via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              production
+            </span>
           </h2>
         </div>
         
-        <div className="space-y-8">
+        <div className="relative">
           {steps.map((step, i) => (
-            <div
-              key={step.num}
-              ref={(el) => { if (el) stepsRef.current[i] = el; }}
-              className={`relative p-8 lg:p-12 rounded-3xl bg-gradient-to-br ${step.gradient} border border-border/50 backdrop-blur-sm`}
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                <span className="text-7xl lg:text-8xl font-bold text-foreground/10">{step.num}</span>
-                <div>
-                  <h3 className="text-2xl lg:text-3xl font-bold mb-3">{step.title}</h3>
-                  <p className="text-lg text-muted-foreground max-w-xl">{step.desc}</p>
+            <div key={step.num} className="relative">
+              <div
+                ref={(el) => { if (el) stepsRef.current[i] = el; }}
+                className={`relative p-8 lg:p-12 rounded-3xl bg-gradient-to-br ${step.bgGradient} border border-border/50 backdrop-blur-sm mb-8 group hover:scale-[1.02] transition-transform duration-500`}
+                style={{ perspective: "1000px" }}
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                  <div className="flex items-center gap-6">
+                    <span 
+                      ref={(el) => { if (el) numbersRef.current[i] = el; }}
+                      className={`text-7xl lg:text-9xl font-bold bg-gradient-to-br ${step.gradient} bg-clip-text text-transparent`}
+                    >
+                      {step.num}
+                    </span>
+                    <div 
+                      ref={(el) => { if (el) iconsRef.current[i] = el; }}
+                      className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white shadow-lg`}
+                    >
+                      {step.icon}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl lg:text-4xl font-bold mb-4">{step.title}</h3>
+                    <p className="text-lg lg:text-xl text-muted-foreground max-w-xl leading-relaxed">{step.desc}</p>
+                  </div>
                 </div>
+                
+                <div className={`absolute -inset-px rounded-3xl bg-gradient-to-br ${step.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500 -z-10`} />
               </div>
+              
+              {i < steps.length - 1 && (
+                <div 
+                  ref={(el) => { if (el) linesRef.current[i] = el; }}
+                  className="w-1 h-16 mx-auto bg-gradient-to-b from-border to-transparent origin-top"
+                />
+              )}
             </div>
           ))}
         </div>
