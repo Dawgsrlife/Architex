@@ -82,10 +82,10 @@ class User(BaseModel):
     email: Optional[str]
     avatar_url: Optional[str]
 
-# Database (placeholder - will be implemented with MongoDB)
+# Database placeholder
 class Database:
     def __init__(self):
-        # This will be replaced with actual MongoDB connection
+        # In-memory storage for development
         self.users = {}
         self.projects = {}
         self.jobs = {}

@@ -17,12 +17,12 @@ class ClineService:
     async def authorize_operation(self, operation: str, params: Dict[str, Any]) -> bool:
         """
         Authorize an operation via Cline
-        This is the "Authorized Mlink" shown in the architecture diagram
+        Authorization layer for secure operations
         """
         logger.info(f"Authorizing operation: {operation}")
         
-        # TODO: Implement actual Cline authorization logic
-        # For now, return True (authorized)
+        # Placeholder for Cline authorization implementation
+        # Currently returns True for all operations
         
         return True
     
@@ -41,8 +41,7 @@ class ClineService:
         
         logger.info(f"Executing authorized operation: {operation}")
         
-        # Execute the operation
-        # TODO: Implement actual operation execution
+        # Operation execution placeholder
         
         return {
             "success": True,
