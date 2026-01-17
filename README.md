@@ -1,27 +1,25 @@
 # Architex
 
-A powerful full-stack Next.js application for converting intent into code with AI-powered architecture generation.
+Full-stack application with separated React frontend and Python FastAPI backend for architecture generation and code development workflows.
 
-## 🚀 Features
+## Features
 
-- **Next.js 16+** with React 19 and TypeScript 5.9
-- **TailwindCSS 4** for modern, responsive UI
-- **GSAP 3.13** for smooth animations
-- **Zustand** for state management
-- **TanStack Query v5** for data fetching and caching
-- **React Hook Form + Zod** for form handling and validation
-- **Shadcn/ui** components for beautiful UI
-- **React Flow** for interactive workflow visualization
-- **MongoDB Atlas + Mongoose** for database
-- **Google Gemini AI** for intelligent code generation
-- **GitHub API** integration for repository management
-- **ElevenLabs TTS** for voice-to-architecture features
-- **Solana** integration for payments and logging
-- **Membership System** with Meta Ads-style management
-- **Background Jobs** support
-- **Vercel + Google Cloud** deployment ready
+- Next.js 16+ with React 19 and TypeScript 5.9
+- TailwindCSS 4 for responsive UI
+- GSAP 3.13 for animations
+- Zustand for state management
+- TanStack Query v5 for data fetching and caching
+- React Hook Form with Zod validation
+- Shadcn/ui component library
+- React Flow for workflow visualization
+- MongoDB Atlas with async Motor driver
+- Google Gemini AI for code generation
+- GitHub API integration
+- Python FastAPI backend
+- GitHub OAuth authentication
+- Async background job processing
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 20+
 - pnpm 10.28.0+
@@ -31,7 +29,7 @@ A powerful full-stack Next.js application for converting intent into code with A
 - ElevenLabs API key (optional)
 - Solana wallet (optional)
 
-## 🛠️ Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -58,7 +56,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 architex/
@@ -87,7 +85,7 @@ architex/
 └── package.json          # Dependencies and scripts
 ```
 
-## 🔑 Environment Variables
+## Environment Variables
 
 See `.env.example` for all required environment variables:
 
@@ -99,7 +97,7 @@ See `.env.example` for all required environment variables:
 - `SOLANA_PRIVATE_KEY` - Solana wallet private key
 - `NEXTAUTH_SECRET` - NextAuth secret key
 
-## 🚢 Deployment
+## Deployment
 
 ### Vercel Deployment
 
@@ -129,7 +127,7 @@ docker build -t architex .
 docker run -p 3000:3000 architex
 ```
 
-## 📚 API Routes
+## API Routes
 
 - `POST /api/ai/generate-code` - Generate code with AI
 - `GET /api/github/repos` - Get GitHub repositories
@@ -137,7 +135,7 @@ docker run -p 3000:3000 architex
 - `GET /api/workflow/save` - Get workflows
 - `POST /api/workflow/save` - Save workflow
 
-## 🎨 Key Features
+## Key Features
 
 ### AI Code Generation
 Use Google Gemini AI to generate code from natural language descriptions.
@@ -154,7 +152,7 @@ Built-in support for cryptocurrency payments using Solana blockchain.
 ### Membership System
 Meta Ads-style membership management with different tiers (free, pro, enterprise).
 
-## 🧪 Scripts
+## Scripts
 
 ```bash
 pnpm dev          # Start development server
@@ -164,21 +162,14 @@ pnpm lint         # Run ESLint
 pnpm type-check   # Run TypeScript type checking
 ```
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. Please submit a Pull Request.
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Next.js team for the amazing framework
-- Vercel for hosting platform
-- Google for Gemini AI
-- All open-source contributors
+MIT License
 
 ---
 
-Built with ❤️ using Next.js, React, and TypeScript
+Built with Next.js, React, Python, and TypeScript

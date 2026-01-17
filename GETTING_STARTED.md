@@ -240,6 +240,6 @@ Once everything is working:
 
 ---
 
-**Congratulations!** 🎉 Your Architex setup is complete!
+Setup complete.
 
-For questions or issues, please refer to the documentation or open an issue on GitHub.
+For questions or issues, refer to the documentation or open an issue on GitHub.

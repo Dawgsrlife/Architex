@@ -1,6 +1,6 @@
-# Quick Start Guide
+# Quick Start
 
-Get Architex up and running in 5 minutes!
+Setup and configuration guide.
 
 ## Prerequisites
 
@@ -212,5 +212,3 @@ architex/
 - Check out the dashboard at `/dashboard`
 - Try the AI code generation API
 - Customize the application to your needs
-
-Happy coding! 🚀

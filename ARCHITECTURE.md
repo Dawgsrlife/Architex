@@ -1,6 +1,6 @@
-# Architex - Refactored Architecture
+# Architex Architecture
 
-A full-stack application with separated frontend (React + Next.js) and backend (Python + FastAPI) following the architecture diagram.
+Full-stack application with separated frontend (React + Next.js) and backend (Python + FastAPI).
 
 ## Architecture Overview
 

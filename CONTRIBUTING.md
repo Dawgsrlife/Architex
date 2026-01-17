@@ -1,6 +1,6 @@
-# Contributing to Architex
+# Contributing
 
-Thank you for your interest in contributing to Architex! This document provides guidelines and instructions for contributing.
+Guidelines and instructions for contributing to Architex.
 
 ## Getting Started
 
@@ -80,8 +80,6 @@ We follow the Conventional Commits specification:
 
 All submissions require review before merging. We use GitHub pull requests for this purpose.
 
-## Questions?
+## Questions
 
-Feel free to open an issue for any questions or concerns.
-
-Thank you for contributing!
+Open an issue for questions or concerns.
