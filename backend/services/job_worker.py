@@ -14,6 +14,7 @@ from pathlib import Path
 from services.gemini import gemini_service
 from services.github import get_github_service
 from services.cline import cline_service
+from services.socket_manager import socket_manager
 from database.mongodb import MongoDB
 
 logger = logging.getLogger(__name__)
@@ -27,127 +28,151 @@ class JobWorker:
     
     async def process_job(self, job_id: str, db: MongoDB):
         """
-        Main job processing pipeline:
-        1. Receive job
-        2. Update status to running
-        3. Run agent (Cline + Gemini)
-        4. Commit and push to GitHub
-        5. Update job status to done/failed
+        Initial job processing: Generate architecture plan but wait for approval
         """
         try:
             logger.info(f"Processing job {job_id}")
             
-            # Fetch job from database
+            # Fetch job
             job = await db.jobs.find_one({"_id": job_id})
             if not job:
                 logger.error(f"Job {job_id} not found")
                 return
             
-            # Update job status to running
+            # Update status to running
+            await db.jobs.update_one(
+                {"_id": job_id},
+                {"$set": {"status": "generating", "updated_at": datetime.utcnow()}}
+            )
+            await socket_manager.emit_status("generating", job_id)
+            await socket_manager.emit_log("Analyzing architecture requirements...", job_id)
+            
+            # Run agent to generate code plan
+            architecture_spec = job.get("architecture_spec", {})
+            
+            # Authorize operation via Cline
+            authorized = await cline_service.authorize_operation(
+                "generate_architecture",
+                {"job_id": job_id, "spec": architecture_spec}
+            )
+            
+            if not authorized:
+                raise Exception("Operation not authorized by Cline")
+            
+            # Generate code using Gemini AI
+            prompt = self._build_generation_prompt(architecture_spec)
+            await socket_manager.emit_log("Consulting Gemini AI...", job_id)
+            generated_content = await gemini_service.generate_architecture(prompt)
+            
+            # Parse the content to ensure it's valid, but don't write yet
+            content_str = generated_content.get("architecture", "{}")
+            if "```json" in content_str:
+                content_str = content_str.split("```json")[1].split("```")[0]
+            elif "```" in content_str:
+                content_str = content_str.split("```")[1].split("```")[0]
+                
+            import json
+            plan = json.loads(content_str)
+            
+            # Save the plan to the job and set status to waiting_review
             await db.jobs.update_one(
                 {"_id": job_id},
                 {
                     "$set": {
-                        "status": "running",
-                        "updated_at": datetime.utcnow()
+                        "status": "waiting_review",
+                        "updated_at": datetime.utcnow(),
+                        "generation_result": plan # Store the plan here
                     }
                 }
             )
             
-            # Get user information
+            await socket_manager.emit_status("waiting_review", job_id)
+            await socket_manager.emit_log("Architecture generated. Waiting for approval.", job_id)
+            await socket_manager.emit_log("REVIEW_REQUIRED", job_id) # Signal for frontend
+            
+        except Exception as e:
+            logger.error(f"Job {job_id} generation failed: {str(e)}")
+            await socket_manager.emit_status("failed", job_id)
+            await socket_manager.emit_log(f"Generation failed: {str(e)}", job_id)
+            await db.jobs.update_one(
+                {"_id": job_id},
+                {"$set": {"status": "failed", "error": str(e)}}
+            )
+
+    async def execute_plan(self, job_id: str, db: MongoDB):
+        """
+        Execute the approved plan: Write files and push to Git
+        """
+        try:
+            job = await db.jobs.find_one({"_id": job_id})
+            if not job or not job.get("generation_result"):
+                raise Exception("Job plan not found")
+
+            # Update status
+            await db.jobs.update_one(
+                {"_id": job_id},
+                {"$set": {"status": "executing", "updated_at": datetime.utcnow()}}
+            )
+            await socket_manager.emit_status("executing", job_id)
+            await socket_manager.emit_log("Plan approved. Starting execution...", job_id)
+
+            # Get user
             user = await db.users.find_one({"_id": job["user_id"]})
             if not user:
                 raise Exception("User not found")
-            
-            # Create workspace for this job
+
+            # Create workspace
             workspace_path = self.workspace_base / job_id
             workspace_path.mkdir(exist_ok=True)
             
-            # Initialize git repository
+            # Initialize git
             self._init_git_repo(workspace_path)
             
-            # Run agent to generate code
-            architecture_spec = job.get("architecture_spec", {})
-            await self._run_agent(job_id, workspace_path, architecture_spec)
+            # Write files
+            files_data = {"architecture": json.dumps(job["generation_result"])} # Wrap to match expected format of _write_generated_files
+            self._write_generated_files(workspace_path, files_data, job.get("architecture_spec", {}))
             
-            # Commit generated code
-            self._commit_changes(workspace_path, "Generated architecture code")
+            # Commit
+            self._commit_changes(workspace_path, "Initial commit from Architex")
+            await socket_manager.emit_log("Code committed to local git", job_id)
             
-            # Push to GitHub repository
+            # Push
             project_id = job.get("project_id")
             if project_id:
                 project = await db.projects.find_one({"_id": project_id})
                 if project and project.get("repository_url"):
+                    await socket_manager.emit_log(f"Pushing to {project['repository_url']}...", job_id)
                     self._push_to_github(
                         workspace_path,
                         project["repository_url"],
                         user["github_access_token"]
                     )
                     
-                    # Update project
                     await db.projects.update_one(
                         {"_id": project_id},
-                        {
-                            "$set": {
-                                "last_updated": datetime.utcnow(),
-                                "job_id": job_id,
-                                "status": "done"
-                            }
-                        }
+                        {"$set": {"status": "done", "last_updated": datetime.utcnow()}}
                     )
-            
-            # Update job status to done
+
+            # Complete
             await db.jobs.update_one(
                 {"_id": job_id},
-                {
-                    "$set": {
-                        "status": "done",
-                        "updated_at": datetime.utcnow(),
-                        "completed_at": datetime.utcnow(),
-                        "result": {
-                            "workspace_path": str(workspace_path),
-                            "files_generated": self._count_files(workspace_path)
-                        }
-                    }
-                }
+                {"$set": {"status": "done", "completed_at": datetime.utcnow()}}
             )
-            
-            logger.info(f"Job {job_id} completed successfully")
-            
+            await socket_manager.emit_status("done", job_id)
+            await socket_manager.emit_log("Deployment complete!", job_id)
+
         except Exception as e:
-            logger.error(f"Job {job_id} failed: {str(e)}")
-            
-            # Update job status to failed
+            logger.error(f"Job {job_id} execution failed: {str(e)}")
+            await socket_manager.emit_status("failed", job_id)
+            await socket_manager.emit_log(f"Execution failed: {str(e)}", job_id)
             await db.jobs.update_one(
                 {"_id": job_id},
-                {
-                    "$set": {
-                        "status": "failed",
-                        "updated_at": datetime.utcnow(),
-                        "completed_at": datetime.utcnow(),
-                        "error": str(e)
-                    }
-                }
+                {"$set": {"status": "failed", "error": str(e)}}
             )
             
-            # Update project if exists
-            project_id = job.get("project_id")
-            if project_id:
-                await db.projects.update_one(
-                    {"_id": project_id},
-                    {
-                        "$set": {
-                            "status": "failed",
-                            "last_updated": datetime.utcnow()
-                        }
-                    }
-                )
-        
-        finally:
-            # Clean up workspace
-            workspace_path = self.workspace_base / job_id
-            if workspace_path.exists():
-                shutil.rmtree(workspace_path, ignore_errors=True)
+            # Clean up
+            if (self.workspace_base / job_id).exists():
+                shutil.rmtree(self.workspace_base / job_id, ignore_errors=True)
     
     def _init_git_repo(self, workspace_path: Path):
         """Initialize a fresh git repository"""
@@ -220,38 +245,50 @@ Provide the output as a structured file tree with content."""
         
         return prompt
     
-    def _write_generated_files(self, workspace_path: Path, generated_content: str, architecture_spec: Dict[str, Any]):
+    def _write_generated_files(self, workspace_path: Path, generated_content: Dict[str, Any], architecture_spec: Dict[str, Any]):
         """Write generated files to workspace"""
         
-        # Create basic project structure
-        (workspace_path / "src").mkdir(exist_ok=True)
-        (workspace_path / "docs").mkdir(exist_ok=True)
-        
-        # Write README
-        readme_content = f"""# {architecture_spec.get('name', 'Generated Project')}
-
-{architecture_spec.get('description', 'Generated by Architex')}
-
-## Architecture
-
-{generated_content}
-
-## Getting Started
-
-Follow the setup instructions to run this project.
-"""
-        (workspace_path / "README.md").write_text(readme_content)
-        
-        # Write architecture specification as JSON
-        import json
-        (workspace_path / "architex.json").write_text(
-            json.dumps(architecture_spec, indent=2)
-        )
-        
-        # Create sample source file
-        (workspace_path / "src" / "main.py").write_text(
-            "# Generated main file\nprint('Hello from Architex')\n"
-        )
+        try:
+            # Extract JSON content
+            content_str = generated_content.get("architecture", "{}")
+            
+            # Clean up markdown code blocks if present
+            if "```json" in content_str:
+                content_str = content_str.split("```json")[1].split("```")[0]
+            elif "```" in content_str:
+                content_str = content_str.split("```")[1].split("```")[0]
+            
+            import json
+            data = json.loads(content_str)
+            files = data.get("files", {})
+            
+            # Write each file
+            for file_path, content in files.items():
+                # Handle directory structure
+                full_path = workspace_path / file_path
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                # Write content
+                full_path.write_text(content, encoding="utf-8")
+                
+            # Create a basic README if not provided (fallback)
+            if "README.md" not in files:
+                readme_content = f"# {architecture_spec.get('name', 'Generated Project')}\n\n{architecture_spec.get('description', 'Generated by Architex')}"
+                (workspace_path / "README.md").write_text(readme_content)
+                
+            # Write architecture specification as JSON for reference
+            (workspace_path / "architex.json").write_text(
+                json.dumps(architecture_spec, indent=2)
+            )
+            
+            logger.info(f"Successfully generated {len(files)} files")
+            
+        except Exception as e:
+            logger.error(f"Failed to parse or write generated files: {str(e)}")
+            logger.error(f"Raw content: {generated_content.get('architecture')}")
+            # Fallback to writing raw content to a file for debugging
+            (workspace_path / "generation_error.log").write_text(str(e))
+            (workspace_path / "raw_output.txt").write_text(generated_content.get("architecture", ""))
     
     def _commit_changes(self, workspace_path: Path, message: str):
         """Commit all changes in the workspace"""

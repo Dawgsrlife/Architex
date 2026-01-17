@@ -49,15 +49,23 @@ class GeminiService:
         
         prompt += """
         
-        Please provide:
-        1. High-level system architecture
-        2. Component breakdown
-        3. Data flow
-        4. API design
-        5. Database schema
-        6. Deployment strategy
+        Please provide a detailed implementation plan and file structure.
         
-        Format the response as a structured JSON document.
+        CRITICAL: Your response must be a valid JSON object with a single key "files".
+        The "files" key should contain a dictionary where:
+        - Keys are file paths (e.g., "src/main.py", "package.json")
+        - Values are the full content of the file
+        
+        Example format:
+        {
+            "files": {
+                "README.md": "# Project...",
+                "src/main.py": "print('hello')"
+            }
+        }
+        
+        Do not look for external documentation. Use your internal knowledge to generate the best possible code.
+        Do not wrap the JSON in markdown code blocks. Return ONLY valid JSON.
         """
         
         try:

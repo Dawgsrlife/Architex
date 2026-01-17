@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Header
+import socketio
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel, Field
@@ -58,10 +59,13 @@ JWT_EXPIRATION_HOURS = 24
 # Pydantic models
 class ArchitectureSpec(BaseModel):
     """Architecture specification for code generation"""
-    name: str
-    description: str
-    components: List[str] = []
-    frameworks: List[str] = []
+    name: str = "New Architecture"
+    description: str = "Generated via Visual Editor"
+    # We now accept full graph data
+    nodes: List[Dict[str, Any]] = []
+    edges: List[Dict[str, Any]] = []
+    components: List[str] = [] # Kept for backward compatibility/easy access
+    frameworks: List[str] = [] # Kept for backward compatibility/easy access
     metadata: Dict[str, Any] = {}
 
 class JobCreate(BaseModel):
@@ -345,6 +349,7 @@ async def create_job(
         "project_id": job_request.project_id,
         "architecture_spec": job_request.architecture_spec.dict(),
         "status": "pending",
+        "logs": [], # Initialize empty logs array
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
     }
@@ -393,8 +398,34 @@ async def get_job_status(
     
     if job.get("metadata"):
         response["metadata"] = job["metadata"]
+        
+    if job.get("logs"):
+        response["logs"] = job["logs"]
     
     return response
+
+@app.post("/api/jobs/{job_id}/approve")
+async def approve_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Approve a pending job for execution
+    """
+    db = MongoDB.get_database()
+    job = await db.jobs.find_one({"_id": job_id, "user_id": user["_id"]})
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    if job["status"] != "waiting_review":
+        raise HTTPException(status_code=400, detail="Job is not waiting for review")
+    
+    # Queue background execution
+    background_tasks.add_task(job_worker.execute_plan, job_id, db)
+    
+    return {"message": "Job approved for execution"}
 
 @app.get("/api/jobs")
 async def get_jobs(
@@ -420,6 +451,10 @@ async def get_jobs(
     
     return jobs
 
-if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    from services.socket_manager import socket_manager
+    
+    # Wrap FastAPI app with SocketIO
+    app_with_socket = socketio.ASGIApp(socket_manager.sio, app)
+    
+    uvicorn.run(app_with_socket, host="0.0.0.0", port=8000)
