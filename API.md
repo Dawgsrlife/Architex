@@ -88,7 +88,7 @@ Create a Solana payment transaction.
   "signature": "transaction_signature",
   "status": "success",
   "amount": 0.1,
-  "timestamp": "2024-01-17T18:00:00.000Z"
+  "timestamp": "2026-01-17T18:00:00.000Z"
 }
 ```
 
@@ -120,7 +120,7 @@ Create or update a workflow.
     "_id": "workflow_id",
     "name": "My Workflow",
     "status": "draft",
-    "createdAt": "2024-01-17T18:00:00.000Z"
+    "createdAt": "2026-01-17T18:00:00.000Z"
   }
 }
 ```

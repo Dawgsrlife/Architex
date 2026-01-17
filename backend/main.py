@@ -41,7 +41,7 @@ async def shutdown_event():
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3005", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -107,6 +107,21 @@ async def get_current_user(authorization: str = Header(None)):
     """Get current user from JWT token"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    
+    token = authorization.replace("Bearer ", "")
+    payload = verify_token(token)
+    user_id = payload.get("sub")
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    
+    db = MongoDB.get_database()
+    user = await db.users.find_one({"_id": user_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
     
     token = authorization.replace("Bearer ", "")
     payload = verify_token(token)
@@ -451,6 +466,7 @@ async def get_jobs(
     
     return jobs
 
+if __name__ == "__main__":
     import uvicorn
     from services.socket_manager import socket_manager
     

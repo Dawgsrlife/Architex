@@ -181,10 +181,13 @@ function Flow() {
             const payload = {
                 name: "New Architecture",
                 description: "Generated via Visual Editor",
+                // Send full graph data for the backend transformer
+                nodes: nodes,
+                edges: edges,
                 metadata: {
                     flow_data: flow
                 },
-                // Extract components from nodes for the basic spec
+                // Keep these for backward compatibility if needed, but the backend now uses nodes/edges
                 components: nodes.map((n: Node) => (n.data as { label: string }).label),
                 frameworks: nodes.map((n: Node) => (n.data as { framework?: string }).framework).filter((f: string | undefined): f is string => !!f)
             };

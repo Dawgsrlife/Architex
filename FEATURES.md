@@ -429,5 +429,5 @@ For feature requests or issues:
 
 ---
 
-Last updated: January 2024
+Last updated: January 2026
 Version: 0.1.0

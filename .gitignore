@@ -1,3 +1,12 @@
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
 # Dependencies
 node_modules/
 .pnp
@@ -18,12 +27,6 @@ dist/
 # Misc
 .DS_Store
 *.pem
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
 # Local env files
 .env
@@ -59,5 +62,3 @@ venv.bak/
 .coverage
 htmlcov/
 *.egg-info/
-dist/
-build/

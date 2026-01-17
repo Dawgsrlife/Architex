@@ -45,7 +45,7 @@ class JobWorker:
                 {"$set": {"status": "generating", "updated_at": datetime.utcnow()}}
             )
             await socket_manager.emit_status("generating", job_id)
-            await socket_manager.emit_log("Analyzing architecture requirements...", job_id)
+            await self._emit_log(job_id, "Analyzing architecture requirements...", db)
             
             # Run agent to generate code plan
             architecture_spec = job.get("architecture_spec", {})
@@ -60,8 +60,10 @@ class JobWorker:
                 raise Exception("Operation not authorized by Cline")
             
             # Generate code using Gemini AI
-            prompt = self._build_generation_prompt(architecture_spec)
-            await socket_manager.emit_log("Consulting Gemini AI...", job_id)
+            prompt = self._convert_graph_to_prompt(architecture_spec)
+            await self._emit_log(job_id, "Translating graph to prompt...", db)
+            await self._emit_log(job_id, "Consulting Gemini AI...", db)
+            
             generated_content = await gemini_service.generate_architecture(prompt)
             
             # Parse the content to ensure it's valid, but don't write yet
@@ -87,13 +89,13 @@ class JobWorker:
             )
             
             await socket_manager.emit_status("waiting_review", job_id)
-            await socket_manager.emit_log("Architecture generated. Waiting for approval.", job_id)
-            await socket_manager.emit_log("REVIEW_REQUIRED", job_id) # Signal for frontend
+            await self._emit_log(job_id, "Architecture generated. Waiting for approval.", db)
+            await self._emit_log(job_id, "REVIEW_REQUIRED", db) # Signal for frontend
             
         except Exception as e:
             logger.error(f"Job {job_id} generation failed: {str(e)}")
             await socket_manager.emit_status("failed", job_id)
-            await socket_manager.emit_log(f"Generation failed: {str(e)}", job_id)
+            await self._emit_log(job_id, f"Generation failed: {str(e)}", db)
             await db.jobs.update_one(
                 {"_id": job_id},
                 {"$set": {"status": "failed", "error": str(e)}}
@@ -114,7 +116,7 @@ class JobWorker:
                 {"$set": {"status": "executing", "updated_at": datetime.utcnow()}}
             )
             await socket_manager.emit_status("executing", job_id)
-            await socket_manager.emit_log("Plan approved. Starting execution...", job_id)
+            await self._emit_log(job_id, "Plan approved. Starting execution...", db)
 
             # Get user
             user = await db.users.find_one({"_id": job["user_id"]})
@@ -134,14 +136,14 @@ class JobWorker:
             
             # Commit
             self._commit_changes(workspace_path, "Initial commit from Architex")
-            await socket_manager.emit_log("Code committed to local git", job_id)
+            await self._emit_log(job_id, "Code committed to local git", db)
             
             # Push
             project_id = job.get("project_id")
             if project_id:
                 project = await db.projects.find_one({"_id": project_id})
                 if project and project.get("repository_url"):
-                    await socket_manager.emit_log(f"Pushing to {project['repository_url']}...", job_id)
+                    await self._emit_log(job_id, f"Pushing to {project['repository_url']}...", db)
                     self._push_to_github(
                         workspace_path,
                         project["repository_url"],
@@ -159,12 +161,12 @@ class JobWorker:
                 {"$set": {"status": "done", "completed_at": datetime.utcnow()}}
             )
             await socket_manager.emit_status("done", job_id)
-            await socket_manager.emit_log("Deployment complete!", job_id)
+            await self._emit_log(job_id, "Deployment complete!", db)
 
         except Exception as e:
             logger.error(f"Job {job_id} execution failed: {str(e)}")
             await socket_manager.emit_status("failed", job_id)
-            await socket_manager.emit_log(f"Execution failed: {str(e)}", job_id)
+            await self._emit_log(job_id, f"Execution failed: {str(e)}", db)
             await db.jobs.update_one(
                 {"_id": job_id},
                 {"$set": {"status": "failed", "error": str(e)}}
@@ -219,30 +221,77 @@ class JobWorker:
         
         logger.info(f"Agent completed for job {job_id}")
     
-    def _build_generation_prompt(self, architecture_spec: Dict[str, Any]) -> str:
-        """Build prompt for Gemini AI based on architecture specification"""
-        spec_description = architecture_spec.get("description", "")
-        components = architecture_spec.get("components", [])
-        frameworks = architecture_spec.get("frameworks", [])
+    async def _emit_log(self, job_id: str, message: str, db: MongoDB):
+        """Emit log to socket and persist to database"""
+        try:
+            timestamp = datetime.utcnow().isoformat()
+            log_entry = {"timestamp": timestamp, "message": message}
+            
+            # Emit via socket
+            await socket_manager.emit_log(message, job_id)
+            
+            # Persist to DB
+            await db.jobs.update_one(
+                {"_id": job_id},
+                {"$push": {"logs": log_entry}}
+            )
+        except Exception as e:
+            logger.error(f"Failed to emit/persist log: {e}")
+
+    def _convert_graph_to_prompt(self, architecture_spec: Dict[str, Any]) -> str:
+        """
+        Convert the graph structure (nodes & edges) into a descriptive prompt for the LLM.
+        This represents the 'Translator' logic.
+        """
+        nodes = architecture_spec.get("nodes", [])
+        edges = architecture_spec.get("edges", [])
         
-        prompt = f"""Generate a complete codebase for the following architecture:
-
-Description: {spec_description}
-
-Components:
-{chr(10).join(f"- {comp}" for comp in components)}
-
-Frameworks/Technologies:
-{chr(10).join(f"- {fw}" for fw in frameworks)}
-
-Generate all necessary files including:
-- Project structure
-- Configuration files
-- Source code
-- Documentation
-
-Provide the output as a structured file tree with content."""
+        # Build node descriptions
+        node_descriptions = []
+        node_map = {} # ID -> Label/Type map for edge resolution
         
+        for node in nodes:
+            node_id = node.get("id")
+            data = node.get("data", {})
+            label = data.get("label", "Unknown Component")
+            framework = data.get("framework", "")
+            node_type = node.get("type", "generic")
+            
+            desc = f"- Component '{label}' (Type: {node_type})"
+            if framework:
+                desc += f" using {framework}"
+            
+            node_descriptions.append(desc)
+            node_map[node_id] = label
+
+        # Build edge descriptions
+        edge_descriptions = []
+        for edge in edges:
+            source_id = edge.get("source")
+            target_id = edge.get("target")
+            source_label = node_map.get(source_id, source_id)
+            target_label = node_map.get(target_id, target_id)
+            
+            edge_descriptions.append(f"- '{source_label}' connects to '{target_label}'")
+            
+        description = architecture_spec.get("description", "No description provided.")
+        
+        prompt = f"""Generate a complete codebase for the following architecture based on this visual design:
+
+Description: {description}
+
+Architecture Components (Nodes):
+{chr(10).join(node_descriptions)}
+
+Connections (Edges):
+{chr(10).join(edge_descriptions) if edge_descriptions else "- No explicit connections defined."}
+
+Instructions:
+1. Interpret the connections to understand the data flow (e.g., Frontend calling Backend API).
+2. Generate a valid file structure reflecting this architecture.
+3. Include all necessary configuration files (package.json, requirements.txt, Dockerfile, etc.).
+4. Provide the output as a structured JSON file tree.
+"""
         return prompt
     
     def _write_generated_files(self, workspace_path: Path, generated_content: Dict[str, Any], architecture_spec: Dict[str, Any]):
