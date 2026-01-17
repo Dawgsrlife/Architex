@@ -209,26 +209,15 @@ function HeroSection() {
 }
 
 function Ticker({ reverse = false }: { reverse?: boolean }) {
-  const tickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.to(tickerRef.current, {
-        xPercent: reverse ? 100 : -100,
-        repeat: -1,
-        duration: 30,
-        ease: "none",
-      });
-    }, tickerRef);
-    return () => ctx.revert();
-  }, [reverse]);
-
   const items = ["Architecture", "Design Systems", "React Flow", "Node Interfaces", "Data Pipelines", "Visual Editors"];
 
   return (
     <div className="overflow-hidden py-6 bg-stone-100 dark:bg-stone-900/50">
-      <div ref={tickerRef} className="flex gap-8 whitespace-nowrap">
-        {[...items, ...items, ...items].map((item, i) => (
+      <div 
+        className={`flex gap-8 whitespace-nowrap ${reverse ? "animate-ticker-reverse" : "animate-ticker"}`}
+        style={{ width: "max-content" }}
+      >
+        {[...items, ...items, ...items, ...items].map((item, i) => (
           <span key={i} className="flex items-center gap-8 text-2xl font-bold text-stone-300 dark:text-stone-700">
             {item}
             <span className="text-[#7c3aed]">✦</span>
