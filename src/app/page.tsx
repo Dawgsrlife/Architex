@@ -248,19 +248,26 @@ function HeroSection() {
   );
 }
 
-function Ticker({ reverse = false }: { reverse?: boolean }) {
-  const items = ["Architecture", "Design Systems", "React Flow", "Node Interfaces", "Data Pipelines", "Visual Editors"];
+function CapabilitiesBanner({ reverse = false, variant = "primary" }: { reverse?: boolean; variant?: "primary" | "secondary" }) {
+  const primaryItems = ["Node-Based Architecture", "Real-Time Collaboration", "Type-Safe Pipelines", "Visual Debugging", "Auto-Documentation", "Version Control"];
+  const secondaryItems = ["Enterprise Scale", "Custom Integrations", "Team Workflows", "API-First Design", "Cloud Native", "CI/CD Ready"];
+  
+  const items = variant === "primary" ? primaryItems : secondaryItems;
 
   return (
-    <div className="overflow-hidden py-6 bg-stone-100 dark:bg-stone-900/50">
+    <div className={`overflow-hidden py-8 border-y ${
+      variant === "primary" 
+        ? "bg-stone-950 border-stone-800" 
+        : "bg-stone-900/50 border-stone-800/50"
+    }`}>
       <div 
-        className={`flex gap-8 whitespace-nowrap ${reverse ? "animate-ticker-reverse" : "animate-ticker"}`}
+        className={`flex gap-12 whitespace-nowrap ${reverse ? "animate-ticker-reverse" : "animate-ticker"}`}
         style={{ width: "max-content" }}
       >
         {[...items, ...items, ...items, ...items].map((item, i) => (
-          <span key={i} className="flex items-center gap-8 text-2xl font-bold text-stone-300 dark:text-stone-700">
-            {item}
-            <span className="text-[#7c3aed]">✦</span>
+          <span key={i} className="flex items-center gap-12 text-sm font-semibold uppercase tracking-[0.2em]">
+            <span className={variant === "primary" ? "text-stone-300" : "text-stone-500"}>{item}</span>
+            <span className="text-[#7c3aed]">◆</span>
           </span>
         ))}
       </div>
@@ -788,9 +795,9 @@ export default function Home() {
     <main className="min-h-screen overflow-x-hidden">
       <Navbar />
       <HeroSection />
-      <Ticker />
+      <CapabilitiesBanner variant="primary" />
       <WorkSection />
-      <Ticker reverse />
+      <CapabilitiesBanner reverse variant="secondary" />
       <ProcessSection />
       <TestimonialsSection />
       <PricingSection />
