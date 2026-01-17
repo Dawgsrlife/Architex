@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
@@ -47,6 +48,7 @@ function HeroSection() {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const visualRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -71,10 +73,20 @@ function HeroSection() {
         )
         .fromTo(
           visualRef.current,
-          { scale: 0.8, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 1.2 },
-          "-=0.8"
+          { scale: 0.8, opacity: 0, y: 60 },
+          { scale: 1, opacity: 1, y: 0, duration: 1.4 },
+          "-=0.6"
         );
+
+      gsap.to(visualRef.current, {
+        y: -30,
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.5,
+        },
+      });
     }, heroRef);
 
     return () => ctx.revert();
@@ -82,38 +94,48 @@ function HeroSection() {
 
   return (
     <section ref={heroRef} className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-transparent" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-30 dark:opacity-20"
+      >
+        <source src="/assets/12575318_3840_2160_30fps.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       
       <div className="max-w-6xl mx-auto px-6 lg:px-8 pt-20 relative z-10">
         <div className="text-center max-w-4xl mx-auto">
           <h1 
             ref={titleRef}
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-8"
+            className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8"
           >
             Build architecture
             <br />
-            <span className="bg-gradient-to-r from-accent via-accent/80 to-accent/60 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-accent via-purple-500 to-pink-500 bg-clip-text text-transparent">
               at the speed of thought
             </span>
           </h1>
           
           <p 
             ref={subtitleRef}
-            className="text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto"
+            className="text-xl lg:text-2xl text-muted-foreground leading-relaxed mb-12 max-w-2xl mx-auto"
           >
             Transform ideas into production-ready code. AI-powered architecture design that understands your vision.
           </p>
           
           <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/workflow">
-              <Button size="lg" className="h-14 px-8 text-base rounded-2xl bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 shadow-xl shadow-black/20">
+              <Button size="lg" className="h-16 px-10 text-lg rounded-2xl bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 shadow-2xl shadow-black/30 hover:scale-105 transition-transform">
                 Start building free
               </Button>
             </Link>
             <Link href="#how-it-works">
-              <Button variant="outline" size="lg" className="h-14 px-8 text-base rounded-2xl border-2">
+              <Button variant="outline" size="lg" className="h-16 px-10 text-lg rounded-2xl border-2 hover:scale-105 transition-transform">
                 See how it works
               </Button>
             </Link>
@@ -122,21 +144,26 @@ function HeroSection() {
 
         <div 
           ref={visualRef}
-          className="mt-20 relative"
+          className="mt-24 relative"
         >
-          <div className="aspect-video max-w-4xl mx-auto rounded-3xl bg-gradient-to-br from-muted to-muted/50 border border-border/50 shadow-2xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent" />
-            <div className="p-8 h-full flex items-center justify-center">
-              <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square rounded-2xl bg-white/50 dark:bg-white/10 backdrop-blur-sm border border-border/50 flex items-center justify-center"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-accent/20" />
-                  </div>
+          <div className="aspect-video max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border border-white/10">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            >
+              <source src="/assets/12777809_3840_2160_30fps.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6 flex items-center gap-4">
+              <div className="flex -space-x-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-purple-500 border-2 border-black" />
                 ))}
               </div>
+              <span className="text-white/80 text-sm">2,000+ developers shipping faster</span>
             </div>
           </div>
         </div>
@@ -247,6 +274,7 @@ function HowItWorksSection() {
       desc: "Tell us what you want to build in plain English. Our AI understands context, constraints, and best practices.",
       gradient: "from-blue-500 to-cyan-500",
       bgGradient: "from-blue-500/10 to-cyan-500/10",
+      video: "/assets/13678999_1920_1080_25fps.mp4",
       icon: (
         <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -259,6 +287,7 @@ function HowItWorksSection() {
       desc: "See your architecture visualized in real-time. Drag, drop, and refine until it's perfect.",
       gradient: "from-purple-500 to-pink-500",
       bgGradient: "from-purple-500/10 to-pink-500/10",
+      video: "/assets/14471955_3840_2160_30fps.mp4",
       icon: (
         <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -272,6 +301,7 @@ function HowItWorksSection() {
       desc: "Export production-ready code. TypeScript, tested, documented, and following your conventions.",
       gradient: "from-orange-500 to-red-500",
       bgGradient: "from-orange-500/10 to-red-500/10",
+      video: "/assets/6346217-uhd_4096_2160_25fps.mp4",
       icon: (
         <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -303,31 +333,43 @@ function HowItWorksSection() {
             <div key={step.num} className="relative">
               <div
                 ref={(el) => { if (el) stepsRef.current[i] = el; }}
-                className={`relative p-8 lg:p-12 rounded-3xl bg-gradient-to-br ${step.bgGradient} border border-border/50 backdrop-blur-sm mb-8 group hover:scale-[1.02] transition-transform duration-500`}
+                className={`relative rounded-3xl bg-gradient-to-br ${step.bgGradient} border border-border/50 backdrop-blur-sm mb-8 group hover:scale-[1.01] transition-transform duration-500 overflow-hidden`}
                 style={{ perspective: "1000px" }}
               >
-                <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-                  <div className="flex items-center gap-6">
-                    <span 
-                      ref={(el) => { if (el) numbersRef.current[i] = el; }}
-                      className={`text-7xl lg:text-9xl font-bold bg-gradient-to-br ${step.gradient} bg-clip-text text-transparent`}
-                    >
-                      {step.num}
-                    </span>
-                    <div 
-                      ref={(el) => { if (el) iconsRef.current[i] = el; }}
-                      className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white shadow-lg`}
-                    >
-                      {step.icon}
+                <div className="flex flex-col lg:flex-row">
+                  <div className="flex-1 p-8 lg:p-12">
+                    <div className="flex items-center gap-6 mb-6">
+                      <span 
+                        ref={(el) => { if (el) numbersRef.current[i] = el; }}
+                        className={`text-6xl lg:text-8xl font-bold bg-gradient-to-br ${step.gradient} bg-clip-text text-transparent`}
+                      >
+                        {step.num}
+                      </span>
+                      <div 
+                        ref={(el) => { if (el) iconsRef.current[i] = el; }}
+                        className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white shadow-lg`}
+                      >
+                        {step.icon}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
                     <h3 className="text-2xl lg:text-4xl font-bold mb-4">{step.title}</h3>
-                    <p className="text-lg lg:text-xl text-muted-foreground max-w-xl leading-relaxed">{step.desc}</p>
+                    <p className="text-lg lg:text-xl text-muted-foreground max-w-md leading-relaxed">{step.desc}</p>
+                  </div>
+                  <div className="lg:w-1/2 h-64 lg:h-auto relative">
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    >
+                      <source src={step.video} type="video/mp4" />
+                    </video>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${step.gradient} opacity-20`} />
                   </div>
                 </div>
                 
-                <div className={`absolute -inset-px rounded-3xl bg-gradient-to-br ${step.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500 -z-10`} />
+                <div className={`absolute -inset-px rounded-3xl bg-gradient-to-br ${step.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 -z-10`} />
               </div>
               
               {i < steps.length - 1 && (
@@ -367,12 +409,12 @@ function FeaturesSection() {
       cardsRef.current.forEach((card, i) => {
         gsap.fromTo(
           card,
-          { y: 60, opacity: 0, scale: 0.95 },
+          { y: 80, opacity: 0, rotateX: 15 },
           {
             y: 0,
             opacity: 1,
-            scale: 1,
-            duration: 0.8,
+            rotateX: 0,
+            duration: 1,
             delay: i * 0.1,
             scrollTrigger: {
               trigger: card,
@@ -387,17 +429,25 @@ function FeaturesSection() {
   }, []);
 
   const features = [
-    { icon: "✦", title: "AI-powered generation", desc: "Context-aware code that understands your project" },
-    { icon: "◈", title: "Visual workflows", desc: "Drag-and-drop architecture builder" },
-    { icon: "◎", title: "Voice control", desc: "Speak your architecture into existence" },
-    { icon: "⬡", title: "GitHub integration", desc: "Push to repos, create branches, manage PRs" },
-    { icon: "◉", title: "Live preview", desc: "See changes instantly with hot reload" },
-    { icon: "◇", title: "Type safety", desc: "Full TypeScript with automatic inference" },
+    { icon: "✦", title: "AI-powered generation", desc: "Context-aware code that understands your project", gradient: "from-blue-500 to-cyan-500" },
+    { icon: "◈", title: "Visual workflows", desc: "Drag-and-drop architecture builder", gradient: "from-purple-500 to-pink-500" },
+    { icon: "◎", title: "Voice control", desc: "Speak your architecture into existence", gradient: "from-orange-500 to-red-500" },
+    { icon: "⬡", title: "GitHub integration", desc: "Push to repos, create branches, manage PRs", gradient: "from-green-500 to-emerald-500" },
+    { icon: "◉", title: "Live preview", desc: "See changes instantly with hot reload", gradient: "from-yellow-500 to-orange-500" },
+    { icon: "◇", title: "Type safety", desc: "Full TypeScript with automatic inference", gradient: "from-indigo-500 to-purple-500" },
   ];
 
   return (
-    <section ref={sectionRef} id="features" className="py-32 lg:py-40 bg-muted/30 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
+    <section ref={sectionRef} id="features" className="py-32 lg:py-40 relative overflow-hidden">
+      <div className="absolute inset-0">
+        <Image
+          src="/assets/pexels-picjumbo-com-55570-196644.jpg"
+          alt=""
+          fill
+          className="object-cover opacity-10 dark:opacity-5"
+        />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
       
       <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="features-title text-center mb-20">
@@ -415,13 +465,15 @@ function FeaturesSection() {
             <div
               key={feature.title}
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
-              className="group p-8 rounded-3xl bg-white dark:bg-white/5 border border-border/50 hover:border-accent/50 transition-all duration-500 hover:shadow-xl hover:shadow-accent/10"
+              className="group p-8 rounded-3xl bg-white/80 dark:bg-white/5 backdrop-blur-sm border border-border/50 hover:border-transparent transition-all duration-500 hover:shadow-2xl hover:shadow-accent/20 relative overflow-hidden"
+              style={{ perspective: "1000px" }}
             >
-              <div className="text-3xl mb-6 w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center text-accent">
+              <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+              <div className={`text-4xl mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-500`}>
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.desc}</p>
+              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
@@ -439,13 +491,14 @@ function TestimonialsSection() {
       quotesRef.current.forEach((quote, i) => {
         gsap.fromTo(
           quote,
-          { y: 80, opacity: 0, rotateX: 10 },
+          { y: 100, opacity: 0, scale: 0.9 },
           {
             y: 0,
             opacity: 1,
-            rotateX: 0,
-            duration: 1,
-            delay: i * 0.2,
+            scale: 1,
+            duration: 1.2,
+            delay: i * 0.15,
+            ease: "power4.out",
             scrollTrigger: {
               trigger: quote,
               start: "top 85%",
@@ -463,22 +516,27 @@ function TestimonialsSection() {
       quote: "Architex has completely transformed how I approach new projects. What used to take days now takes hours.",
       name: "Sarah Chen",
       role: "Senior Developer at Vercel",
+      image: "/assets/pexels-cottonbro-9665180.jpg",
     },
     {
       quote: "The AI understands exactly what I need. It's like having a senior architect always available.",
       name: "Marcus Johnson",
       role: "Tech Lead at Stripe",
+      image: "/assets/pexels-cottonbro-9667824.jpg",
     },
     {
       quote: "Finally, a tool that bridges the gap between ideation and implementation without compromise.",
       name: "Emily Rodriguez",
       role: "Founder at TechFlow",
+      image: "/assets/pexels-jakubzerdzicki-29521529.jpg",
     },
   ];
 
   return (
-    <section ref={sectionRef} id="testimonials" className="py-32 lg:py-40">
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+    <section ref={sectionRef} id="testimonials" className="py-32 lg:py-40 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
+      
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="text-center mb-20">
           <p className="text-sm font-semibold uppercase tracking-widest text-accent mb-4">Testimonials</p>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
@@ -491,12 +549,23 @@ function TestimonialsSection() {
             <div
               key={t.name}
               ref={(el) => { if (el) quotesRef.current[i] = el; }}
-              className="p-8 rounded-3xl bg-gradient-to-br from-muted/50 to-transparent border border-border/50"
+              className="group relative rounded-3xl overflow-hidden"
             >
-              <p className="text-lg leading-relaxed mb-8">&ldquo;{t.quote}&rdquo;</p>
-              <div>
-                <p className="font-bold">{t.name}</p>
-                <p className="text-sm text-muted-foreground">{t.role}</p>
+              <div className="absolute inset-0">
+                <Image
+                  src={t.image}
+                  alt={t.name}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
+              </div>
+              <div className="relative p-8 pt-48">
+                <p className="text-lg text-white/90 leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
+                <div>
+                  <p className="font-bold text-white">{t.name}</p>
+                  <p className="text-sm text-white/60">{t.role}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -529,11 +598,12 @@ function PricingSection() {
       cardsRef.current.forEach((card, i) => {
         gsap.fromTo(
           card,
-          { y: 100, opacity: 0 },
+          { y: 100, opacity: 0, rotateY: i === 1 ? 0 : (i === 0 ? 10 : -10) },
           {
             y: 0,
             opacity: 1,
-            duration: 0.8,
+            rotateY: 0,
+            duration: 1,
             delay: i * 0.15,
             scrollTrigger: {
               trigger: sectionRef.current,
@@ -575,7 +645,19 @@ function PricingSection() {
   ];
 
   return (
-    <section ref={sectionRef} id="pricing" className="py-32 lg:py-40 bg-muted/30 relative overflow-hidden">
+    <section ref={sectionRef} id="pricing" className="py-32 lg:py-40 relative overflow-hidden">
+      <div className="absolute inset-0">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover opacity-10 dark:opacity-5"
+        >
+          <source src="/assets/12981875_2160_4096_60fps.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-3xl" />
       
       <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
@@ -587,15 +669,15 @@ function PricingSection() {
           <p className="text-xl text-muted-foreground">Start free. Scale as you grow.</p>
         </div>
         
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8" style={{ perspective: "1000px" }}>
           {plans.map((plan, i) => (
             <div
               key={plan.name}
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
-              className={`p-8 rounded-3xl border ${
+              className={`p-8 rounded-3xl border backdrop-blur-sm transition-all duration-500 hover:scale-105 ${
                 plan.featured
-                  ? "bg-black text-white dark:bg-white dark:text-black border-transparent shadow-2xl scale-105"
-                  : "bg-white dark:bg-white/5 border-border/50"
+                  ? "bg-gradient-to-br from-black to-black/90 dark:from-white dark:to-white/90 text-white dark:text-black border-transparent shadow-2xl shadow-accent/30 scale-105 lg:-mt-4 lg:mb-4"
+                  : "bg-white/80 dark:bg-white/5 border-border/50 hover:border-accent/50"
               }`}
             >
               <p className={`text-sm font-semibold uppercase tracking-widest mb-4 ${plan.featured ? "text-white/70 dark:text-black/70" : "text-muted-foreground"}`}>
@@ -615,7 +697,7 @@ function PricingSection() {
               </ul>
               <Link href="/workflow">
                 <Button
-                  className={`w-full h-12 rounded-2xl font-medium ${
+                  className={`w-full h-12 rounded-2xl font-medium transition-transform hover:scale-105 ${
                     plan.featured
                       ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90"
                       : ""
@@ -640,11 +722,12 @@ function CTASection() {
     const ctx = gsap.context(() => {
       gsap.fromTo(
         ".cta-content",
-        { y: 60, opacity: 0 },
+        { y: 80, opacity: 0, scale: 0.95 },
         {
           y: 0,
           opacity: 1,
-          duration: 1,
+          scale: 1,
+          duration: 1.2,
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 80%",
@@ -659,19 +742,28 @@ function CTASection() {
   return (
     <section ref={sectionRef} className="py-32 lg:py-40">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
-        <div className="cta-content relative p-12 lg:p-20 rounded-[2.5rem] bg-gradient-to-br from-black to-black/90 dark:from-white dark:to-white/90 text-white dark:text-black text-center overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-accent/30 rounded-full blur-3xl" />
+        <div className="cta-content relative rounded-[2.5rem] overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/assets/12575318_3840_2160_30fps.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/70 dark:bg-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-purple-500/30" />
           
-          <div className="relative z-10">
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+          <div className="relative z-10 p-12 lg:p-24 text-center">
+            <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-6 text-white">
               Ready to ship faster?
             </h2>
-            <p className="text-xl text-white/70 dark:text-black/70 mb-10 max-w-xl mx-auto">
+            <p className="text-xl lg:text-2xl text-white/70 mb-12 max-w-2xl mx-auto">
               Join thousands of developers building smarter with Architex.
             </p>
             <Link href="/workflow">
-              <Button size="lg" className="h-14 px-10 text-base rounded-2xl bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 shadow-xl">
+              <Button size="lg" className="h-16 px-12 text-lg rounded-2xl bg-white text-black hover:bg-white/90 shadow-2xl hover:scale-105 transition-transform">
                 Get started free
               </Button>
             </Link>
