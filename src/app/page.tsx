@@ -353,113 +353,189 @@ function WorkSection() {
 
 function ProcessSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement[]>([]);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const orbitRef = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
+
+  const steps = [
+    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", icon: "M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" },
+    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" },
+    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", icon: "M5 12h14M12 5l7 7-7 7" },
+  ];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Progress line animation
-      gsap.fromTo(lineRef.current,
-        { scaleY: 0 },
-        { 
-          scaleY: 1, 
-          ease: "none",
+      const totalSteps = steps.length;
+      
+      gsap.fromTo(titleRef.current,
+        { y: 100, opacity: 0, scale: 0.9 },
+        {
+          y: 0, opacity: 1, scale: 1,
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: "top 60%",
-            end: "bottom 80%",
-            scrub: true
+            start: "top 80%",
+            end: "top 40%",
+            scrub: 1
           }
         }
       );
 
+      gsap.to(orbitRef.current, {
+        rotation: 360,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 0.5
+        }
+      });
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: `+=${window.innerHeight * (totalSteps + 1)}`,
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+          onUpdate: (self) => {
+            const progress = self.progress;
+            const stepIndex = Math.min(Math.floor(progress * totalSteps), totalSteps - 1);
+            setActiveStep(stepIndex);
+          }
+        }
+      });
+
       stepsRef.current.forEach((step, i) => {
-        gsap.fromTo(step,
+        const startProgress = i / totalSteps;
+        const endProgress = (i + 0.8) / totalSteps;
+        
+        tl.fromTo(step,
           { 
-            y: 50, 
+            z: -800,
             opacity: 0,
-            scale: 0.95,
-            filter: "blur(10px)"
+            rotateX: 45,
+            y: 200,
+            scale: 0.5
           },
           { 
-            y: 0, 
-            opacity: 1, 
+            z: 0,
+            opacity: 1,
+            rotateX: 0,
+            y: 0,
             scale: 1,
-            filter: "blur(0px)",
-            duration: 1, 
-            ease: "power3.out", 
-            scrollTrigger: { 
-              trigger: step, 
-              start: "top 85%",
-              toggleActions: "play none none reverse"
-            }
-          }
+            ease: "power2.out"
+          },
+          startProgress
+        ).to(step,
+          {
+            z: 400,
+            opacity: 0,
+            rotateX: -20,
+            y: -100,
+            scale: 0.8,
+            ease: "power2.in"
+          },
+          endProgress
         );
       });
     }, sectionRef);
     return () => ctx.revert();
-  }, []);
-
-  const steps = [
-    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", color: "#7c3aed" },
-    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", color: "#a78bfa" },
-    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", color: "#c4b5fd" },
-    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", color: "#7c3aed" },
-  ];
+  }, [steps.length]);
 
   return (
-    <section ref={sectionRef} id="process" className="py-48 relative overflow-hidden bg-stone-950">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#7c3aed]/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[#a78bfa]/10 blur-[100px] rounded-full pointer-events-none" />
-      
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="flex flex-col items-center text-center mb-32">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-900 border border-stone-800 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#7c3aed]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Methodology</span>
+    <section ref={sectionRef} id="process" className="relative bg-stone-950" style={{ height: `${(steps.length + 2) * 100}vh` }}>
+      <div ref={containerRef} className="h-screen w-full overflow-hidden relative" style={{ perspective: "1200px" }}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.15),transparent_60%)]" />
+        
+        <div ref={orbitRef} className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] lg:w-[800px] lg:h-[800px]">
+            <div className="absolute inset-0 rounded-full border border-[#7c3aed]/10" />
+            <div className="absolute inset-8 rounded-full border border-[#7c3aed]/15" />
+            <div className="absolute inset-16 rounded-full border border-[#7c3aed]/20" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#7c3aed] shadow-[0_0_20px_rgba(124,58,237,0.8)]" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-[#a78bfa] shadow-[0_0_15px_rgba(167,139,250,0.6)]" />
+            <div className="absolute top-1/2 left-0 -translate-y-1/2 w-2 h-2 rounded-full bg-[#c4b5fd] shadow-[0_0_15px_rgba(196,181,253,0.6)]" />
+            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#7c3aed] shadow-[0_0_18px_rgba(124,58,237,0.7)]" />
           </div>
-          <h2 className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6">
-            The Blueprint for<br />
-            <span className="bg-gradient-to-r from-[#7c3aed] via-[#c4b5fd] to-[#a78bfa] bg-clip-text text-transparent">Execution</span>
-          </h2>
-          <p className="text-stone-400 text-lg max-w-xl mx-auto">
-            A systematic approach to building resilient, scalable, and visually stunning digital architecture.
-          </p>
         </div>
 
-        <div className="relative max-w-4xl mx-auto">
-          {/* Vertical Progress Line */}
-          <div className="absolute left-[31px] lg:left-10 top-0 bottom-0 w-px bg-stone-800">
-            <div ref={lineRef} className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-[#7c3aed] via-[#a78bfa] to-transparent origin-top scale-y-0" />
+        <div ref={titleRef} className="absolute top-12 left-0 right-0 z-20 text-center px-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900/80 backdrop-blur-sm border border-stone-800 mb-4">
+            <span className="w-2 h-2 rounded-full bg-[#7c3aed] animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-stone-400">Methodology</span>
           </div>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+            The Blueprint for{" "}
+            <span className="bg-gradient-to-r from-[#7c3aed] via-[#c4b5fd] to-[#a78bfa] bg-clip-text text-transparent">Execution</span>
+          </h2>
+        </div>
 
-          <div className="space-y-24">
-            {steps.map((step, i) => (
-              <div
-                key={step.num}
-                ref={(el) => { if (el) stepsRef.current[i] = el; }}
-                className="relative flex items-start gap-8 lg:items-center"
-              >
-                {/* Number/Circle Container */}
-                <div className="relative z-20 flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <span className="text-xl lg:text-2xl font-bold text-white relative z-10">{step.num}</span>
-                  <div className="absolute -inset-2 bg-[#7c3aed]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+          {steps.map((_, i) => (
+            <div 
+              key={i} 
+              className={`h-1 rounded-full transition-all duration-500 ${
+                i === activeStep ? "w-8 bg-[#7c3aed]" : "w-2 bg-stone-700"
+              }`}
+            />
+          ))}
+        </div>
 
-                {/* Content Card */}
-                <div className="flex-1">
-                  <div className="group relative">
-                    <h3 className="text-2xl lg:text-3xl font-bold text-white mb-2 lg:mb-4 group-hover:text-[#a78bfa] transition-colors duration-300">{step.title}</h3>
-                    <p className="text-stone-400 text-base lg:text-lg leading-relaxed">{step.desc}</p>
-                    
-                    {/* Hover Glow Line */}
-                    <div className="absolute bottom-0 left-0 h-px bg-gradient-to-r from-[#7c3aed]/50 via-[#7c3aed]/50 to-transparent transition-all duration-700 w-0 group-hover:w-full" />
+        <div className="absolute inset-0 flex items-center justify-center" style={{ transformStyle: "preserve-3d" }}>
+          {steps.map((step, i) => (
+            <div
+              key={step.num}
+              ref={(el) => { if (el) stepsRef.current[i] = el; }}
+              className="absolute w-full max-w-3xl px-6"
+              style={{ 
+                transformStyle: "preserve-3d",
+                opacity: 0,
+                transform: "translateZ(-800px) rotateX(45deg)"
+              }}
+            >
+              <div className="relative">
+                <div className="absolute -inset-4 bg-gradient-to-r from-[#7c3aed]/20 via-[#a78bfa]/10 to-transparent blur-3xl rounded-3xl" />
+                
+                <div className="relative bg-stone-900/60 backdrop-blur-2xl rounded-3xl border border-stone-800/50 p-8 lg:p-12 overflow-hidden group">
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7c3aed]/50 to-transparent" />
+                  
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8">
+                    <div className="relative flex-shrink-0">
+                      <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-2xl bg-gradient-to-br from-[#7c3aed]/20 to-[#a78bfa]/10 border border-[#7c3aed]/30 flex items-center justify-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.3),transparent_70%)]" />
+                        <svg className="w-10 h-10 lg:w-12 lg:h-12 text-[#a78bfa] relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d={step.icon} />
+                        </svg>
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[#7c3aed] flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-[#7c3aed]/50">
+                        {step.num}
+                      </div>
+                    </div>
+
+                    <div className="flex-1">
+                      <h3 className="text-3xl lg:text-5xl font-bold text-white mb-4 tracking-tight">{step.title}</h3>
+                      <p className="text-stone-400 text-lg lg:text-xl leading-relaxed max-w-xl">{step.desc}</p>
+                    </div>
                   </div>
+
+                  <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#7c3aed]/5 to-transparent pointer-events-none" />
                 </div>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="absolute bottom-24 right-8 text-right hidden lg:block">
+          <div className="text-8xl font-bold text-stone-900/50" style={{ fontFamily: "monospace" }}>
+            {String(activeStep + 1).padStart(2, "0")}
+          </div>
+          <div className="text-xs uppercase tracking-[0.3em] text-stone-600 mt-2">
+            of {String(steps.length).padStart(2, "0")}
           </div>
         </div>
       </div>
