@@ -35,6 +35,7 @@ from enum import Enum
 from services.cline import cline_service
 from services.mock_app_generator import generate_mock_app
 from services.code_generator import generate_codebase
+from services.code_generator_v2 import generate_connected_codebase
 from services.architecture_translator import translate_architecture
 from services.socket_manager import socket_manager
 from database.mongo import get_db
@@ -179,17 +180,18 @@ class JobWorker:
                     await self._log(user_id, job_id, f"  ... and {len(files_written) - 5} more files")
                     
             elif use_llm:
-                # INTELLIGENT MODE: Real AI code generation
-                await self._log(user_id, job_id, "🧠 Intelligent mode: Generating with AI...")
+                # INTELLIGENT MODE: Real AI code generation with cross-node awareness
+                await self._log(user_id, job_id, "🧠 Intelligent mode: Generating CONNECTED code with AI...")
                 
                 try:
-                    files_written = await generate_codebase(
+                    # Use v2 generator with cross-node awareness
+                    files_written = await generate_connected_codebase(
                         architecture_spec,
                         workspace_path,
                         progress_callback=progress_callback
                     )
                     
-                    await self._log(user_id, job_id, f"Generated {len(files_written)} files with AI")
+                    await self._log(user_id, job_id, f"Generated {len(files_written)} CONNECTED files with AI")
                     
                 except Exception as e:
                     logger.error(f"AI generation failed: {e}, falling back to templates")
@@ -199,16 +201,16 @@ class JobWorker:
                     # Fallback to mock generator
                     files_written = generate_mock_app(architecture_spec, workspace_path)
             else:
-                # DEFAULT MODE: Try AI, fallback to templates
-                await self._log(user_id, job_id, "🚀 Attempting intelligent generation...")
+                # DEFAULT MODE: Try AI v2 (cross-node aware), fallback to templates
+                await self._log(user_id, job_id, "🚀 Attempting intelligent cross-node generation...")
                 
                 try:
-                    files_written = await generate_codebase(
+                    files_written = await generate_connected_codebase(
                         architecture_spec,
                         workspace_path,
                         progress_callback=progress_callback
                     )
-                    await self._log(user_id, job_id, f"✅ Generated {len(files_written)} files with AI")
+                    await self._log(user_id, job_id, f"✅ Generated {len(files_written)} CONNECTED files with AI")
                     
                 except Exception as e:
                     logger.warning(f"AI generation unavailable: {e}, using templates")
