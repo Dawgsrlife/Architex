@@ -1,52 +1,55 @@
 """
-API Dependencies
-Shared auth and database dependencies
+Shared Dependencies for API Routes
+Authentication, database access, etc.
 """
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Depends
 from jose import JWTError, jwt
-import logging
+from typing import Optional
 
-from database.mongodb import MongoDB
-from config import config
-
-logger = logging.getLogger(__name__)
-
-
-def verify_token(token: str) -> dict:
-    """Verify JWT and return payload"""
-    try:
-        return jwt.decode(token, config.JWT_SECRET, algorithms=[config.JWT_ALGORITHM])
-    except JWTError as e:
-        logger.warning(f"JWT verification failed: {e}")
-        raise HTTPException(401, "Invalid or expired token")
+from config import settings
+from repos import users_repo
 
 
 async def get_current_user(authorization: str = Header(None)) -> dict:
     """
-    Get current authenticated user from JWT.
+    FastAPI dependency to get current authenticated user from JWT.
     
-    Usage: user = Depends(get_current_user)
-    
-    Expects: Authorization: Bearer <token>
+    Usage:
+        @router.get("/protected")
+        async def protected_route(user: dict = Depends(get_current_user)):
+            ...
     """
-    if not authorization:
-        raise HTTPException(401, "Authorization header required")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401, 
+            detail="Missing or invalid authorization header"
+        )
     
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(401, "Invalid authorization format. Use: Bearer <token>")
+    token = authorization.replace("Bearer ", "")
     
-    token = authorization[7:]  # Remove "Bearer "
-    payload = verify_token(token)
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.jwt_secret, 
+            algorithms=[settings.jwt_algorithm]
+        )
+    except JWTError:
+        raise HTTPException(
+            status_code=401, 
+            detail="Invalid authentication credentials"
+        )
+    
     user_id = payload.get("sub")
-    
     if not user_id:
-        raise HTTPException(401, "Invalid token: missing user ID")
+        raise HTTPException(status_code=401, detail="Invalid token payload")
     
-    db = MongoDB.get_database()
-    user = await db.users.find_one({"_id": user_id})
-    
+    user = await users_repo.get_user(user_id)
     if not user:
-        logger.warning(f"User not found for ID: {user_id}")
-        raise HTTPException(404, "User not found")
+        raise HTTPException(status_code=404, detail="User not found")
     
     return user
+
+
+def get_user_id(user: dict) -> str:
+    """Extract userId from user dict (helper for repos)"""
+    return user.get("userId") or user.get("_id")

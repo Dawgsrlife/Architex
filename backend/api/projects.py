@@ -1,25 +1,28 @@
 """
 Projects Routes
-CRUD operations for projects
+CRUD operations for user projects
 """
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uuid
 import logging
 
-from database.mongodb import MongoDB
-from api.deps import get_current_user
+from api.deps import get_current_user, get_user_id
+from repos import projects_repo
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 logger = logging.getLogger(__name__)
 
 
+# ============================================================================
+# Request/Response Models
+# ============================================================================
+
 class ProjectCreate(BaseModel):
     """Create project request"""
     name: str
-    description: str
+    description: Optional[str] = None
     repository_url: Optional[str] = None
 
 
@@ -27,115 +30,129 @@ class ProjectUpdate(BaseModel):
     """Update project request"""
     name: Optional[str] = None
     description: Optional[str] = None
-    repository_url: Optional[str] = None
+    current_nodes: Optional[List[Dict[str, Any]]] = None
 
 
-def _serialize_project(p: dict) -> dict:
+class NodesUpdate(BaseModel):
+    """Update nodes request"""
+    nodes: List[Dict[str, Any]]
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def serialize_project(p: dict) -> dict:
     """Serialize project document for API response"""
-    created_at = p.get("created_at")
-    updated_at = p.get("updated_at") or p.get("last_updated")
+    def format_dt(dt):
+        if isinstance(dt, datetime):
+            return dt.isoformat()
+        return str(dt) if dt else None
     
     return {
-        "id": p["_id"],
-        "name": p["name"],
-        "description": p.get("description", ""),
-        "repository_url": p.get("repository_url"),
-        "status": p.get("status", "pending"),
-        "created_at": created_at.isoformat() if hasattr(created_at, 'isoformat') else str(created_at),
-        "updated_at": updated_at.isoformat() if hasattr(updated_at, 'isoformat') else str(updated_at),
+        "projectId": p.get("projectId"),
+        "name": p.get("project_name"),
+        "description": p.get("description"),
+        "github_repo_url": p.get("github_repo_url"),
+        "current_nodes": p.get("current_nodes", []),
+        "prompts_history": p.get("prompts_history", []),
+        "last_updated": format_dt(p.get("last_updated")),
+        "createdAt": format_dt(p.get("createdAt")),
+        "updatedAt": format_dt(p.get("updatedAt")),
     }
 
 
+# ============================================================================
+# Routes
+# ============================================================================
+
 @router.get("")
-async def get_projects(user: dict = Depends(get_current_user)):
+async def list_projects(user: dict = Depends(get_current_user)):
     """Get all projects for current user"""
-    db = MongoDB.get_database()
-    projects = []
+    user_id = get_user_id(user)
+    projects = await projects_repo.list_projects(user_id)
+    return [serialize_project(p) for p in projects]
+
+
+@router.post("")
+async def create_project(
+    project: ProjectCreate, 
+    user: dict = Depends(get_current_user)
+):
+    """Create a new project"""
+    user_id = get_user_id(user)
     
-    async for p in db.projects.find({"user_id": user["_id"]}):
-        projects.append(_serialize_project(p))
+    project_doc = await projects_repo.create_project(
+        userId=user_id,
+        project_name=project.name,
+        description=project.description,
+        repository_url=project.repository_url
+    )
     
-    logger.info(f"User {user['_id']} fetched {len(projects)} projects")
-    return projects
+    logger.info(f"Created project {project_doc['projectId']} for user {user_id}")
+    return serialize_project(project_doc)
 
 
 @router.get("/{project_id}")
 async def get_project(project_id: str, user: dict = Depends(get_current_user)):
-    """Get a single project by ID"""
-    db = MongoDB.get_database()
-    project = await db.projects.find_one({"_id": project_id, "user_id": user["_id"]})
+    """Get a specific project by ID"""
+    user_id = get_user_id(user)
+    project = await projects_repo.get_project(user_id, project_id)
     
     if not project:
-        raise HTTPException(404, "Project not found")
+        raise HTTPException(status_code=404, detail="Project not found")
     
-    return _serialize_project(project)
-
-
-@router.post("")
-async def create_project(project: ProjectCreate, user: dict = Depends(get_current_user)):
-    """Create a new project"""
-    db = MongoDB.get_database()
-    project_id = str(uuid.uuid4())
-    
-    doc = {
-        "_id": project_id,
-        "user_id": user["_id"],
-        "name": project.name,
-        "description": project.description,
-        "repository_url": project.repository_url,
-        "status": "pending",
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
-    
-    await db.projects.insert_one(doc)
-    logger.info(f"User {user['_id']} created project {project_id}")
-    
-    return _serialize_project(doc)
+    return serialize_project(project)
 
 
 @router.put("/{project_id}")
 async def update_project(
-    project_id: str, 
-    update: ProjectUpdate, 
+    project_id: str,
+    update: ProjectUpdate,
     user: dict = Depends(get_current_user)
 ):
     """Update a project"""
-    db = MongoDB.get_database()
-    project = await db.projects.find_one({"_id": project_id, "user_id": user["_id"]})
+    user_id = get_user_id(user)
     
-    if not project:
-        raise HTTPException(404, "Project not found")
+    updated = await projects_repo.update_project(
+        userId=user_id,
+        projectId=project_id,
+        name=update.name,
+        description=update.description,
+        current_nodes=update.current_nodes
+    )
     
-    # Build update dict with only provided fields
-    update_data = {"updated_at": datetime.utcnow()}
-    if update.name is not None:
-        update_data["name"] = update.name
-    if update.description is not None:
-        update_data["description"] = update.description
-    if update.repository_url is not None:
-        update_data["repository_url"] = update.repository_url
+    if not updated:
+        raise HTTPException(status_code=404, detail="Project not found")
     
-    await db.projects.update_one({"_id": project_id}, {"$set": update_data})
+    logger.info(f"Updated project {project_id}")
+    return {"message": "Project updated", "projectId": project_id}
+
+
+@router.put("/{project_id}/nodes")
+async def update_project_nodes(
+    project_id: str,
+    update: NodesUpdate,
+    user: dict = Depends(get_current_user)
+):
+    """Update only the current_nodes of a project (React Flow state)"""
+    user_id = get_user_id(user)
+    success = await projects_repo.update_current_nodes(user_id, project_id, update.nodes)
     
-    # Fetch updated project
-    updated = await db.projects.find_one({"_id": project_id})
-    logger.info(f"User {user['_id']} updated project {project_id}")
+    if not success:
+        raise HTTPException(status_code=404, detail="Project not found")
     
-    return _serialize_project(updated)
+    return {"message": "Nodes updated", "projectId": project_id}
 
 
 @router.delete("/{project_id}")
 async def delete_project(project_id: str, user: dict = Depends(get_current_user)):
     """Delete a project"""
-    db = MongoDB.get_database()
-    project = await db.projects.find_one({"_id": project_id, "user_id": user["_id"]})
+    user_id = get_user_id(user)
+    success = await projects_repo.delete_project(user_id, project_id)
     
-    if not project:
-        raise HTTPException(404, "Project not found")
+    if not success:
+        raise HTTPException(status_code=404, detail="Project not found")
     
-    await db.projects.delete_one({"_id": project_id})
-    logger.info(f"User {user['_id']} deleted project {project_id}")
-    
-    return {"message": "Project deleted", "id": project_id}
-
+    logger.info(f"Deleted project {project_id}")
+    return {"message": "Project deleted", "projectId": project_id}

@@ -1,76 +1,82 @@
 """
 Jobs Routes
-Architecture generation job endpoints
+Job creation and status polling endpoints
 """
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uuid
 import logging
 
-from database.mongodb import MongoDB
+from api.deps import get_current_user, get_user_id
+from repos import projects_repo, jobs_repo
+from database.mongo import get_db
 from services.job_worker import job_worker
-from api.deps import get_current_user
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 logger = logging.getLogger(__name__)
 
 
+# ============================================================================
+# Request/Response Models
+# ============================================================================
+
 class ArchitectureSpec(BaseModel):
-    """
-    Architecture specification from the visual editor.
-    
-    This is the massive JSON containing all nodes, edges, and instructions.
-    - nodes: List of components (frontend, backend, database, etc.)
-    - edges: Connections between components
-    - metadata: Additional configuration
-    """
+    """Architecture specification from the visual editor"""
     name: str = "New Architecture"
     description: str = "Generated via Visual Editor"
-    nodes: List[Dict[str, Any]] = []
-    edges: List[Dict[str, Any]] = []
-    components: List[str] = []
-    frameworks: List[str] = []
-    metadata: Dict[str, Any] = {}
+    nodes: List[Dict[str, Any]] = Field(default_factory=list)
+    edges: List[Dict[str, Any]] = Field(default_factory=list)
+    prompt: str = ""  # The user's text prompt
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class JobCreate(BaseModel):
     """Create job request"""
+    project_id: str
     architecture_spec: ArchitectureSpec
-    project_id: Optional[str] = None
 
 
-def _serialize_datetime(dt) -> Optional[str]:
-    """Safely serialize datetime"""
-    if dt is None:
-        return None
-    if hasattr(dt, 'isoformat'):
-        return dt.isoformat()
-    return str(dt)
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
-
-def _serialize_job(job: dict) -> dict:
+def serialize_job(j: dict, include_spec: bool = False) -> dict:
     """Serialize job document for API response"""
-    response = {
-        "job_id": job["_id"],
-        "status": job.get("status", "pending"),
-        "project_id": job.get("project_id"),
-        "created_at": _serialize_datetime(job.get("created_at")),
-        "updated_at": _serialize_datetime(job.get("updated_at")),
+    def format_dt(dt):
+        if isinstance(dt, datetime):
+            return dt.isoformat()
+        return str(dt) if dt else None
+    
+    result = {
+        "jobId": j.get("jobId"),
+        "projectId": j.get("projectId"),
+        "status": j.get("status"),
+        "createdAt": format_dt(j.get("createdAt")),
+        "updatedAt": format_dt(j.get("updatedAt")),
     }
     
-    if job.get("completed_at"):
-        response["completed_at"] = _serialize_datetime(job["completed_at"])
-    if job.get("result"):
-        response["result"] = job["result"]
-    if job.get("error"):
-        response["error"] = job["error"]
-    if job.get("logs"):
-        response["logs"] = job["logs"]
+    if j.get("completedAt"):
+        result["completedAt"] = format_dt(j.get("completedAt"))
+    if j.get("result"):
+        result["result"] = j.get("result")
+    if j.get("error"):
+        result["error"] = j.get("error")
+    if j.get("logs"):
+        result["logs"] = j.get("logs")
+    if j.get("warnings"):
+        result["warnings"] = j.get("warnings")
+    if j.get("prompt"):
+        result["prompt"] = j.get("prompt")
+    if include_spec and j.get("architecture_spec"):
+        result["architecture_spec"] = j.get("architecture_spec")
     
-    return response
+    return result
 
+
+# ============================================================================
+# Routes
+# ============================================================================
 
 @router.post("")
 async def create_job(
@@ -81,74 +87,92 @@ async def create_job(
     """
     Create a new architecture generation job.
     
-    The architecture_spec contains the full node graph from React Flow.
-    Job runs asynchronously - frontend should poll GET /jobs/{id} for status.
+    Flow:
+    1. Validate project exists
+    2. Append prompt to project's prompts_history
+    3. Update project's current_nodes
+    4. Create job document
+    5. Queue background job processing
     """
-    db = MongoDB.get_database()
-    job_id = str(uuid.uuid4())
+    user_id = get_user_id(user)
+    project_id = job_request.project_id
+    spec = job_request.architecture_spec
     
-    spec_dict = job_request.architecture_spec.dict()
-    node_count = len(spec_dict.get("nodes", []))
-    edge_count = len(spec_dict.get("edges", []))
+    # Verify project exists
+    project = await projects_repo.get_project(user_id, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
     
-    logger.info(f"Creating job {job_id} with {node_count} nodes, {edge_count} edges")
+    # Append prompt to project history
+    if spec.prompt:
+        await projects_repo.append_prompt_to_history(
+            user_id, project_id, spec.prompt, {"source": "job_create"}
+        )
     
-    doc = {
-        "_id": job_id,
-        "user_id": user["_id"],
-        "project_id": job_request.project_id,
-        "architecture_spec": spec_dict,
-        "status": "pending",
-        "logs": [],
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
+    # Update project's current nodes
+    if spec.nodes:
+        await projects_repo.update_current_nodes(user_id, project_id, spec.nodes)
     
-    await db.jobs.insert_one(doc)
+    # Create job
+    job_doc = await jobs_repo.create_job(
+        userId=user_id,
+        projectId=project_id,
+        architecture_spec=spec.model_dump()
+    )
+    
+    job_id = job_doc["jobId"]
+    db = get_db()
     
     # Queue background processing
     background_tasks.add_task(job_worker.process_job, job_id, db)
     
+    logger.info(f"Job {job_id} created for project {project_id}")
+    
     return {
-        "job_id": job_id,
+        "jobId": job_id,
+        "projectId": project_id,
         "status": "pending",
-        "message": f"Job queued for processing ({node_count} nodes, {edge_count} edges)"
+        "message": f"Job queued ({len(spec.nodes)} nodes, {len(spec.edges)} edges)"
     }
 
 
 @router.get("/{job_id}")
-async def get_job_status(job_id: str, user: dict = Depends(get_current_user)):
+async def get_job(job_id: str, user: dict = Depends(get_current_user)):
     """
     Get job status.
-    
-    Frontend should poll this every 2-5 seconds while status is 'pending' or 'generating'.
-    Status values: pending, generating, done, failed
+    Frontend should poll this every 2-5 seconds during job execution.
     """
-    db = MongoDB.get_database()
-    job = await db.jobs.find_one({"_id": job_id, "user_id": user["_id"]})
+    user_id = get_user_id(user)
+    job = await jobs_repo.get_job(user_id, job_id)
     
     if not job:
-        raise HTTPException(404, "Job not found")
+        raise HTTPException(status_code=404, detail="Job not found")
     
-    return _serialize_job(job)
+    return serialize_job(job, include_spec=False)
 
 
 @router.get("")
-async def get_jobs(
+async def list_jobs(
     user: dict = Depends(get_current_user),
     project_id: Optional[str] = None
 ):
     """Get all jobs for current user, optionally filtered by project"""
-    db = MongoDB.get_database()
+    user_id = get_user_id(user)
     
-    query = {"user_id": user["_id"]}
     if project_id:
-        query["project_id"] = project_id
+        jobs = await jobs_repo.list_jobs_for_project(user_id, project_id)
+    else:
+        db = get_db()
+        jobs = []
+        async for job in db.jobs.find({"userId": user_id}).sort("createdAt", -1):
+            jobs.append(job)
     
-    jobs = []
-    async for job in db.jobs.find(query).sort("created_at", -1):
-        jobs.append(_serialize_job(job))
-    
-    logger.info(f"User {user['_id']} fetched {len(jobs)} jobs")
-    return jobs
+    return [serialize_job(j) for j in jobs]
 
+
+@router.get("/project/{project_id}")
+async def list_project_jobs(project_id: str, user: dict = Depends(get_current_user)):
+    """Get all jobs for a specific project"""
+    user_id = get_user_id(user)
+    jobs = await jobs_repo.list_jobs_for_project(user_id, project_id)
+    return [serialize_job(j) for j in jobs]
