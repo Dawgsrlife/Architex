@@ -25,6 +25,7 @@
   "project_name": "My SaaS App",
   "description": "A cool SaaS application",
   "github_repo_url": "https://github.com/user/repo",
+  "latest_successful_job_id": "uuid-job-id",
   "current_nodes": [
     {
       "id": "node-1",
@@ -65,10 +66,12 @@
     "edges": [...],
     "metadata": {}
   },
-  "status": "pending|generating|done|failed",
+  "prompt": "User's text prompt",
+  "status": "pending|running|completed|completed_with_warnings|failed",
   "logs": [
     { "ts": "2026-01-17T22:00:00Z", "level": "info", "message": "Starting..." }
   ],
+  "warnings": ["Warning message 1", "Warning message 2"],
   "result": {},
   "error": null,
   "createdAt": "2026-01-17T22:00:00Z",
@@ -94,6 +97,10 @@ Projects (1) ----< Jobs (many)
 2. **prompts_history**: List of all prompts user has given for this project
 3. **architecture_spec in job**: Full snapshot of the architecture at time of job creation
 4. **github_repo_url**: Set when repo is created/linked, used for pushing generated code
+5. **latest_successful_job_id**: Updated ONLY when a job reaches `completed` or `completed_with_warnings`
+6. **prompt in job**: Denormalized from `architecture_spec.prompt` for easy querying
+7. **warnings in job**: Explicit warnings list for UI (separate from logs)
+8. **Status transitions**: Strictly enforced: `pending → running → completed|completed_with_warnings|failed`
 
 ## MongoDB Atlas Setup
 

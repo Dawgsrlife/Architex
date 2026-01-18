@@ -79,9 +79,11 @@ class JobResponse(BaseModel):
     jobId: str
     projectId: Optional[str] = None
     status: str
+    prompt: str = ""  # Denormalized from architecture_spec
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     logs: List[Dict[str, Any]] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)  # Explicit warnings for UI
     createdAt: datetime
     updatedAt: datetime
     completedAt: Optional[datetime] = None

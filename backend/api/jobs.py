@@ -121,10 +121,9 @@ async def create_job(
     )
     
     job_id = job_doc["jobId"]
-    db = get_db()
     
     # Queue background processing
-    background_tasks.add_task(job_worker.process_job, job_id, db)
+    background_tasks.add_task(job_worker.process_job, job_id)
     
     logger.info(f"Job {job_id} created for project {project_id}")
     

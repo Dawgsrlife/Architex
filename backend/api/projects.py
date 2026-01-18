@@ -56,6 +56,7 @@ def serialize_project(p: dict) -> dict:
         "github_repo_url": p.get("github_repo_url"),
         "current_nodes": p.get("current_nodes", []),
         "prompts_history": p.get("prompts_history", []),
+        "latest_successful_job_id": p.get("latest_successful_job_id"),
         "last_updated": format_dt(p.get("last_updated")),
         "createdAt": format_dt(p.get("createdAt")),
         "updatedAt": format_dt(p.get("updatedAt")),

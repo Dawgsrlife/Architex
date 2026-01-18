@@ -65,7 +65,7 @@ class JobWorker:
     def __init__(self):
         self.WORKSPACE_BASE.mkdir(parents=True, exist_ok=True)
     
-    async def process_job(self, job_id: str, db=None):
+    async def process_job(self, job_id: str):
         """
         Main entry point for job processing.
         
@@ -74,6 +74,8 @@ class JobWorker:
         - Workspace is cleaned up on success, failure, or exception
         - Job status is always updated
         - Logs are persisted to DB
+        
+        Note: Uses get_db() internally for database access.
         """
         workspace_path: Optional[Path] = None
         user_id: Optional[str] = None
