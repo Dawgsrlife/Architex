@@ -166,15 +166,15 @@ function HeroSection() {
                 Architecture
               </span>
               <span ref={(el) => { if (el) titleLinesRef.current[1] = el; }} className="block text-stone-400 dark:text-stone-500">
-                that tells
+                to Code
               </span>
               <span ref={(el) => { if (el) titleLinesRef.current[2] = el; }} className="block bg-gradient-to-r from-[#7c3aed] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
-                your story
+                in seconds.
               </span>
             </h1>
 
             <p ref={subtitleRef} className="text-lg lg:text-xl text-stone-600 dark:text-stone-400 max-w-lg leading-relaxed">
-              We craft digital experiences that transform complex systems into elegant, intuitive interfaces. From concept to production.
+              Design your system visually. Architex uses agentic AI to transform your blueprint into a production-ready GitHub repository.
             </p>
 
             <div ref={ctaRef} className="flex flex-wrap gap-4">
@@ -249,8 +249,8 @@ function HeroSection() {
 }
 
 function CapabilitiesBanner({ reverse = false, variant = "primary" }: { reverse?: boolean; variant?: "primary" | "secondary" }) {
-  const primaryItems = ["Node-Based Architecture", "Real-Time Collaboration", "Type-Safe Pipelines", "Visual Debugging", "Auto-Documentation", "Version Control"];
-  const secondaryItems = ["Enterprise Scale", "Custom Integrations", "Team Workflows", "API-First Design", "Cloud Native", "CI/CD Ready"];
+  const primaryItems = ["React Flow Blueprinting", "Agentic AI Orchestration", "Next.js App Router", "FastAPI Backend", "MongoDB Integration", "GitHub Automation"];
+  const secondaryItems = ["Gemini Pro Vision", "TypeScript Native", "Dockerized Infrastructure", "CI/CD Workflows", "Production Ready Code", "Real-Time Monitoring"];
   
   const items = variant === "primary" ? primaryItems : secondaryItems;
 
@@ -298,9 +298,9 @@ function WorkSection() {
   }, []);
 
   const works = [
-    { num: "001", title: "Flow Builder", desc: "Visual node editor for complex workflows", video: "/assets/14471955_3840_2160_30fps.mp4" },
-    { num: "002", title: "Data Canvas", desc: "Real-time data visualization platform", video: "/assets/6346217-uhd_4096_2160_25fps.mp4" },
-    { num: "003", title: "Pipeline Studio", desc: "Enterprise-grade pipeline orchestration", video: "/assets/12575318_3840_2160_30fps.mp4" },
+    { num: "001", title: "Full-Stack SaaS", desc: "Next.js + FastAPI + PostgreSQL + Stripe", video: "/assets/14471955_3840_2160_30fps.mp4" },
+    { num: "002", title: "AI Dashboard", desc: "Real-time analytics with Gemini integration", video: "/assets/6346217-uhd_4096_2160_25fps.mp4" },
+    { num: "003", title: "Microservices Mesh", desc: "Go/Node.js architecture with Redis & Docker", video: "/assets/12575318_3840_2160_30fps.mp4" },
   ];
 
   return (
@@ -308,15 +308,15 @@ function WorkSection() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div ref={titleRef} className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-20">
           <div>
-            <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Selected Work</span>
+            <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Generated Architectures</span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-              Crafted with
+              Ready to
               <br />
-              <span className="text-stone-400 dark:text-stone-600">precision</span>
+              <span className="text-stone-400 dark:text-stone-600">Clone & Ship</span>
             </h2>
           </div>
           <p className="text-lg text-stone-600 dark:text-stone-400 max-w-md">
-            Each project is a unique exploration of form and function, designed to push boundaries.
+            Our AI generates production-grade repositories based on your visual designs, following industry best practices.
           </p>
         </div>
 
@@ -360,10 +360,10 @@ function ProcessSection() {
   const [activeStep, setActiveStep] = useState(0);
 
   const steps = [
-    { num: "01", title: "Discovery", desc: "Deep dive into your vision, constraints, and goals. We map out the entire system architecture.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-    { num: "02", title: "Design", desc: "Visual prototyping with real-time collaboration. See your architecture take shape before any code.", icon: "M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" },
-    { num: "03", title: "Develop", desc: "Production-grade implementation with TypeScript, testing, and documentation built in.", icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" },
-    { num: "04", title: "Deploy", desc: "Seamless deployment to your infrastructure. Monitoring, scaling, and ongoing support.", icon: "M5 12h14M12 5l7 7-7 7" },
+    { num: "01", title: "Blueprint", desc: "Design your system using our interactive React Flow canvas. Drag and drop components to map your architecture.", icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+    { num: "02", title: "Configure", desc: "Define tech stacks, environment variables, and business logic requirements for each node in your system.", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" },
+    { num: "03", title: "Synthesize", desc: "Our agentic AI (Cline + Gemini) takes your blueprint and orchestrates the creation of a full-scale repository.", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+    { num: "04", title: "Handover", desc: "Receive a private GitHub repository with all code, configurations, and documentation ready for deployment.", icon: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" },
   ];
 
   useEffect(() => {
@@ -615,9 +615,9 @@ function PricingSection() {
   }, []);
 
   const plans = [
-    { name: "Starter", price: "$0", period: "to start", features: ["5 projects", "Basic templates", "Community support", "Standard exports"], cta: "Get started", featured: false },
-    { name: "Professional", price: "$49", period: "/month", features: ["Unlimited projects", "Premium templates", "Priority support", "Advanced integrations", "Team collaboration"], cta: "Start trial", featured: true },
-    { name: "Enterprise", price: "Custom", period: "", features: ["Everything in Pro", "Custom solutions", "Dedicated support", "SLA guarantee", "On-premise option"], cta: "Contact us", featured: false },
+    { name: "Hackathon", price: "$0", period: "forever", features: ["3 active projects", "Standard templates", "GitHub integration", "Community support"], cta: "Ship for free", featured: false },
+    { name: "Developer", price: "$19", period: "/month", features: ["Unlimited projects", "Premium components", "Priority agent queue", "Advanced integrations", "Private repos"], cta: "Upgrade now", featured: true },
+    { name: "Team", price: "$49", period: "/month", features: ["Everything in Dev", "Collaborative canvas", "Custom agent prompts", "SLA support", "On-premise option"], cta: "Contact sales", featured: false },
   ];
 
   return (
