@@ -51,15 +51,19 @@ export function HeroSection() {
             >
               Start Building
             </Link>
-            <Link 
-              href="#process" 
-              className="text-sm font-medium text-stone-400 hover:text-white transition-colors group flex items-center gap-2"
-            >
-              See how it works
-              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
+<Link 
+                href="#process" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("process")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="text-sm font-medium text-stone-400 hover:text-white transition-colors group flex items-center gap-2"
+              >
+                See how it works
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
           </div>
         </div>
       </div>
