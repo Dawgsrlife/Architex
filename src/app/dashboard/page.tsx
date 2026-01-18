@@ -63,8 +63,11 @@ function DashboardNav() {
               <Link href="/dashboard" className="px-4 py-2 text-sm text-stone-900 font-medium">
                 Dashboard
               </Link>
-              <Link href="/learn-more" className="px-4 py-2 text-sm text-stone-500 hover:text-stone-900 transition-colors">
-                Docs
+              <Link href="/explore" className="px-4 py-2 text-sm text-stone-500 hover:text-stone-900 transition-colors">
+                Explore
+              </Link>
+              <Link href="/sketch" className="px-4 py-2 text-sm text-stone-500 hover:text-stone-900 transition-colors">
+                Sketch
               </Link>
             </div>
           </div>

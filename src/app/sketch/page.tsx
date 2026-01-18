@@ -1,114 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { ReactFlowProvider } from "@xyflow/react";
+import dynamic from "next/dynamic";
 import { 
   ArrowLeft, 
-  Save, 
-  Download,
-  Loader2,
-  Undo2,
-  Redo2,
+  Rocket, 
+  Loader2, 
+  X, 
+  Check, 
   Github,
-  Play,
-  X,
-  Check,
-  ChevronRight,
-  FolderGit2,
-  FileCode2,
-  Settings2,
-  ExternalLink,
   Globe,
-  Rocket,
-  Lock,
-  Unlock,
-  Eye,
-  EyeOff
+  ExternalLink,
+  Sparkles,
+  Play,
+  FileCode2,
+  FolderGit2,
+  Settings2,
+  Wand2,
+  PenTool
 } from "lucide-react";
-import ComponentLibrary from "@/components/canvas/ComponentLibrary";
-import ArchitectureCanvas from "@/components/canvas/ArchitectureCanvas";
-import { useArchitectureStore } from "@/stores/architecture-store";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
-export default function ProjectEditorPage() {
-  const params = useParams();
+const Tldraw = dynamic(
+  async () => {
+    const mod = await import("tldraw");
+    return mod.Tldraw;
+  },
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-stone-100">
+        <Loader2 className="w-6 h-6 text-stone-400 animate-spin" />
+      </div>
+    )
+  }
+);
+
+export default function SketchPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const projectId = params.id as string;
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [projectName, setProjectName] = useState("Untitled Project");
-  const [isEditingName, setIsEditingName] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState(0);
-  const [isPublic, setIsPublic] = useState(false);
   const [deployToVercel, setDeployToVercel] = useState(true);
   const [generatedLinks, setGeneratedLinks] = useState<{github?: string; vercel?: string} | null>(null);
-  
-  const { 
-    nodes, 
-    edges,
-    setProjectName: setStoreName, 
-    setProjectId, 
-    clearCanvas,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    pushHistory
-  } = useArchitectureStore();
+  const [projectName, setProjectName] = useState("My Sketch");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.replace("/login");
-      return;
     }
   }, [isAuthenticated, authLoading, router]);
-
-  useEffect(() => {
-    if (projectId === "new") {
-      clearCanvas();
-      setProjectName("Untitled Project");
-      setStoreName("Untitled Project");
-      setProjectId(null);
-      pushHistory();
-    } else {
-      setProjectId(projectId);
-      setProjectName(`Project ${projectId}`);
-      setStoreName(`Project ${projectId}`);
-    }
-    setLoading(false);
-  }, [projectId, clearCanvas, setStoreName, setProjectId, pushHistory]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
-        e.preventDefault();
-        redo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
-  };
 
   const handleGenerate = async () => {
     if (!selectedRepo) return;
@@ -117,21 +62,24 @@ export default function ProjectEditorPage() {
     setGeneratedLinks(null);
     setGenerationStep(1);
     
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     setGenerationStep(2);
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2500));
     setGenerationStep(3);
     
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     setGenerationStep(4);
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setGenerationStep(5);
     
     if (deployToVercel) {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      setGenerationStep(5);
+      setGenerationStep(6);
       
       await new Promise(resolve => setTimeout(resolve, 1500));
-      setGenerationStep(6);
+      setGenerationStep(7);
     }
     
     setGeneratedLinks({
@@ -143,9 +91,10 @@ export default function ProjectEditorPage() {
   };
 
   const generationSteps = [
-    { label: "Analyzing architecture", icon: Settings2 },
+    { label: "Analyzing your sketch with AI", icon: Sparkles },
+    { label: "Interpreting architecture components", icon: Wand2 },
     { label: "Generating code structure", icon: FileCode2 },
-    { label: "Creating files", icon: FolderGit2 },
+    { label: "Creating project files", icon: FolderGit2 },
     { label: "Pushing to GitHub", icon: Github },
     ...(deployToVercel ? [
       { label: "Connecting to Vercel", icon: Globe },
@@ -153,9 +102,7 @@ export default function ProjectEditorPage() {
     ] : [])
   ];
 
-  const totalSteps = deployToVercel ? 6 : 4;
-
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-white">
         <Loader2 className="w-5 h-5 text-stone-400 animate-spin" />
@@ -184,120 +131,45 @@ export default function ProjectEditorPage() {
 
           <div className="h-5 w-px bg-stone-200" />
 
-          {isEditingName ? (
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => {
-                setProjectName(e.target.value);
-                setStoreName(e.target.value);
-              }}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={(e) => e.key === "Enter" && setIsEditingName(false)}
-              autoFocus
-              className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-1 text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/5 focus:border-stone-300"
-            />
-          ) : (
-            <button 
-              onClick={() => setIsEditingName(true)}
-              className="text-sm font-medium text-stone-900 hover:text-stone-600 transition-colors"
-            >
-              {projectName}
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsPublic(!isPublic)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
-              isPublic 
-                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" 
-                : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-            }`}
-            title={isPublic ? "Public project" : "Private project"}
-          >
-            {isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-            {isPublic ? "Public" : "Private"}
-          </button>
-
-          <span className="text-xs text-stone-400 hidden sm:inline">
-            {nodes.length} nodes · {edges.length} connections
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <div className="hidden sm:flex items-center gap-1 mr-2">
-            <button 
-              onClick={undo}
-              disabled={!canUndo()}
-              className="p-2 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-stone-400"
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo2 className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={redo}
-              disabled={!canRedo()}
-              className="p-2 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-stone-400"
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo2 className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2">
+            <PenTool className="w-4 h-4 text-stone-500" />
+            <span className="text-sm font-medium text-stone-900">Sketch Mode</span>
           </div>
 
-          <div className="h-5 w-px bg-stone-200 hidden sm:block" />
+          <div className="h-5 w-px bg-stone-200" />
 
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">Save</span>
-          </button>
+          <input
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            className="bg-transparent border-none text-sm text-stone-600 focus:outline-none focus:text-stone-900"
+            placeholder="Untitled Sketch"
+          />
+        </div>
 
-          <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all">
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
-
-          <div className="h-5 w-px bg-stone-200 mx-1" />
-
+        <div className="flex items-center gap-2">
           <button 
             onClick={() => setGenerateModalOpen(true)}
-            disabled={nodes.length === 0}
-            className="flex items-center gap-2 px-4 py-1.5 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95 disabled:opacity-50 disabled:hover:bg-stone-900"
+            className="flex items-center gap-2 px-4 py-1.5 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
           >
-            <Rocket className="w-4 h-4" />
-            <span className="hidden sm:inline">Deploy</span>
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">Build from Sketch</span>
           </button>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <aside className="w-64 flex-shrink-0 overflow-hidden border-r border-stone-200 bg-white">
-          <ComponentLibrary />
-        </aside>
-
-        <main className="flex-1 overflow-hidden relative bg-stone-100">
-          <ReactFlowProvider>
-            <ArchitectureCanvas />
-          </ReactFlowProvider>
-          
-          <div className="absolute bottom-4 left-4 flex items-center gap-3 text-xs text-stone-400">
-            <span className="flex items-center gap-1.5 px-2 py-1 bg-white border border-stone-200 rounded-lg">
-              <kbd className="font-mono">⌘Z</kbd>
-              <span>Undo</span>
-            </span>
-            <span className="flex items-center gap-1.5 px-2 py-1 bg-white border border-stone-200 rounded-lg">
-              <kbd className="font-mono">⌘Y</kbd>
-              <span>Redo</span>
-            </span>
+      <div className="flex-1 relative">
+        <Tldraw />
+        
+        <div className="absolute bottom-4 left-4 bg-white border border-stone-200 rounded-xl p-4 shadow-lg max-w-xs">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-medium text-stone-900">AI-Powered</span>
           </div>
-        </main>
+          <p className="text-xs text-stone-500 leading-relaxed">
+            Draw your application architecture using shapes, arrows, and labels. Our AI will interpret your sketch and generate a complete, deployable project.
+          </p>
+        </div>
       </div>
 
       {generateModalOpen && (
@@ -308,12 +180,12 @@ export default function ProjectEditorPage() {
             <div className="p-6 border-b border-stone-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center">
-                    <Rocket className="w-5 h-5 text-stone-600" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-amber-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-medium text-stone-900">Deploy Project</h2>
-                    <p className="text-sm text-stone-500">Generate code & deploy to production</p>
+                    <h2 className="text-lg font-medium text-stone-900">Build from Sketch</h2>
+                    <p className="text-sm text-stone-500">AI will interpret and build your app</p>
                   </div>
                 </div>
                 {!generating && (
@@ -334,6 +206,31 @@ export default function ProjectEditorPage() {
             <div className="p-6">
               {!generating && !generatedLinks ? (
                 <>
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <Wand2 className="w-5 h-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-900">How it works</p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Our AI analyzes your sketch to identify components like databases, APIs, services, and their connections. It then generates production-ready code based on your visual design.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-stone-700 mb-2">
+                      Project Name
+                    </label>
+                    <input
+                      type="text"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/5 focus:border-stone-300"
+                      placeholder="My Project"
+                    />
+                  </div>
+
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-stone-700 mb-2">
                       GitHub Repository
@@ -344,9 +241,9 @@ export default function ProjectEditorPage() {
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/5 focus:border-stone-300"
                     >
                       <option value="">Choose or create a repository...</option>
-                      <option value="my-app">my-app</option>
-                      <option value="backend-api">backend-api</option>
-                      <option value="new-project">+ Create new repository</option>
+                      <option value="my-sketched-app">my-sketched-app (new)</option>
+                      <option value="prototype-app">prototype-app</option>
+                      <option value="quick-mvp">quick-mvp</option>
                     </select>
                   </div>
 
@@ -376,41 +273,13 @@ export default function ProjectEditorPage() {
                     </label>
                   </div>
 
-                  <div className="bg-stone-50 rounded-xl p-4 mb-6">
-                    <h3 className="text-sm font-medium text-stone-900 mb-3">What will be generated:</h3>
-                    <ul className="space-y-2 text-sm text-stone-600">
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-emerald-500" />
-                        Complete project structure from your architecture
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-emerald-500" />
-                        Docker & infrastructure configuration
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-emerald-500" />
-                        Service boilerplate with API endpoints
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-emerald-500" />
-                        Environment variables & secrets setup
-                      </li>
-                      {deployToVercel && (
-                        <li className="flex items-center gap-2">
-                          <Check className="w-4 h-4 text-emerald-500" />
-                          Live deployment with custom domain
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-
                   <button
                     onClick={handleGenerate}
                     disabled={!selectedRepo}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-all disabled:opacity-50 disabled:hover:bg-stone-900"
                   >
-                    <Play className="w-4 h-4" />
-                    Generate & Deploy
+                    <Sparkles className="w-4 h-4" />
+                    Analyze & Build
                   </button>
                 </>
               ) : generating ? (
@@ -425,11 +294,11 @@ export default function ProjectEditorPage() {
                         <div 
                           key={index}
                           className={`flex items-center gap-4 p-3 rounded-xl transition-all ${
-                            isActive ? "bg-stone-100" : isComplete ? "bg-emerald-50" : "bg-stone-50"
+                            isActive ? "bg-amber-50" : isComplete ? "bg-emerald-50" : "bg-stone-50"
                           }`}
                         >
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                            isComplete ? "bg-emerald-500" : isActive ? "bg-stone-900" : "bg-stone-200"
+                            isComplete ? "bg-emerald-500" : isActive ? "bg-amber-500" : "bg-stone-200"
                           }`}>
                             {isComplete ? (
                               <Check className="w-4 h-4 text-white" />
@@ -441,7 +310,7 @@ export default function ProjectEditorPage() {
                           </div>
                           <div className="flex-1">
                             <p className={`text-sm font-medium ${
-                              isComplete ? "text-emerald-700" : isActive ? "text-stone-900" : "text-stone-400"
+                              isComplete ? "text-emerald-700" : isActive ? "text-amber-700" : "text-stone-400"
                             }`}>
                               {step.label}
                             </p>
@@ -457,10 +326,10 @@ export default function ProjectEditorPage() {
                     <Check className="w-8 h-8 text-emerald-600" />
                   </div>
                   <h3 className="text-lg font-medium text-stone-900 text-center mb-2">
-                    Deployment Complete!
+                    Your App is Live!
                   </h3>
                   <p className="text-sm text-stone-500 text-center mb-6">
-                    Your project is live and ready to use
+                    We turned your sketch into a real application
                   </p>
 
                   <div className="space-y-3 mb-6">
