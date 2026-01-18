@@ -173,6 +173,23 @@ async def set_github_repo_url(userId: str, projectId: str, github_repo_url: str)
     return result.modified_count > 0
 
 
+async def set_vercel_url(userId: str, projectId: str, vercel_url: str) -> bool:
+    """Set the Vercel deployment URL for a project"""
+    db = get_db()
+    result = await db.projects.update_one(
+        {"userId": userId, "projectId": projectId},
+        {
+            "$set": {
+                "vercel_url": vercel_url,
+                "last_updated": get_utc_now(),
+                "updatedAt": get_utc_now()
+            }
+        }
+    )
+    logger.info(f"Set Vercel URL for project {projectId}: {vercel_url}")
+    return result.modified_count > 0
+
+
 async def touch_project_last_updated(userId: str, projectId: str) -> bool:
     """Update last_updated timestamp for a project"""
     db = get_db()
@@ -193,3 +210,4 @@ async def delete_project(userId: str, projectId: str) -> bool:
     db = get_db()
     result = await db.projects.delete_one({"userId": userId, "projectId": projectId})
     return result.deleted_count > 0
+

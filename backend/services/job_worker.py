@@ -619,6 +619,38 @@ class JobWorker:
                 print(f"✅ [JOB {job_id}] PUSH SUCCESSFUL!")
                 await self._log(user_id, job_id, "✅ Push successful")
                 await projects_repo.touch_project_last_updated(user_id, project_id)
+                
+                # === VERCEL DEPLOYMENT ===
+                # Deploy to Vercel if configured
+                try:
+                    from services.vercel import deploy_to_vercel, get_vercel_service
+                    
+                    vercel_service = get_vercel_service()
+                    if vercel_service.is_configured:
+                        print(f"🚀 [JOB {job_id}] Triggering Vercel deployment...")
+                        await self._log(user_id, job_id, "🚀 Deploying to Vercel...")
+                        
+                        deploy_result = await deploy_to_vercel(
+                            github_repo_url=repo_url,
+                            project_name=project_name or "architex-app",
+                        )
+                        
+                        if deploy_result.get("success"):
+                            vercel_url = deploy_result.get("deployment_url")
+                            print(f"✅ [JOB {job_id}] DEPLOYMENT TRIGGERED: {vercel_url}")
+                            await self._log(user_id, job_id, f"🚀 Deployed to: {vercel_url}")
+                            
+                            # Store Vercel URL in project
+                            await projects_repo.set_vercel_url(user_id, project_id, vercel_url)
+                        else:
+                            error_msg = deploy_result.get("error", "Unknown error")
+                            print(f"⚠️ [JOB {job_id}] Vercel deployment failed: {error_msg}")
+                            warnings.append(f"Vercel deployment failed: {error_msg}")
+                    else:
+                        print(f"ℹ️ [JOB {job_id}] Vercel not configured - skipping deployment")
+                except Exception as vercel_error:
+                    print(f"⚠️ [JOB {job_id}] Vercel error: {vercel_error}")
+                    warnings.append(f"Vercel deployment skipped: {str(vercel_error)}")
             else:
                 print(f"❌ [JOB {job_id}] PUSH FAILED!")
                 warnings.append("Push failed - repo may already have conflicting content")

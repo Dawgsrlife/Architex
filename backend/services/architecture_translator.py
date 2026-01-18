@@ -322,6 +322,148 @@ CODE_INSTRUCTIONS: Dict[ComponentType, List[str]] = {
 
 
 # ============================================================================
+# EDGE INVARIANTS - Code Patterns Enforced by Connections
+# ============================================================================
+# When two nodes are connected by an edge, specific code patterns are REQUIRED.
+# This is the "semantic glue" that makes the visual graph actually matter.
+#
+# Format: (source_type, target_type): [list of code invariants]
+
+EDGE_INVARIANTS: Dict[tuple, List[str]] = {
+    # === AUTH CONNECTIONS ===
+    (ComponentType.AUTH, ComponentType.REACT): [
+        "main.tsx MUST wrap the app in <AuthProvider> context",
+        "Create src/contexts/AuthContext.tsx with useAuth hook",
+        "AuthContext must expose: user, login, logout, isAuthenticated",
+        "Protected routes must redirect to /login if not authenticated",
+    ],
+    (ComponentType.AUTH, ComponentType.NEXTJS): [
+        "Create src/contexts/AuthContext.tsx with 'use client' directive",
+        "Root layout.tsx must wrap children in <AuthProvider>",
+        "AuthContext must expose: user, login, logout, isAuthenticated, loading",
+        "Create middleware.ts to protect /dashboard/* routes",
+        "Redirect unauthenticated users to /login",
+    ],
+    (ComponentType.OAUTH, ComponentType.REACT): [
+        "main.tsx MUST wrap the app in OAuth provider (Auth0Provider or similar)",
+        "Configure OAuth with domain and clientId from environment variables",
+        "Create /auth/callback route to handle OAuth redirects",
+        "Store OAuth tokens in AuthContext for API calls",
+    ],
+    (ComponentType.OAUTH, ComponentType.NEXTJS): [
+        "Create auth/callback/route.ts API route for OAuth callback",
+        "Use next-auth or @auth0/auth0-react for authentication",
+        "Store session in cookies for SSR compatibility",
+        "Add getSession helper in src/lib/auth.ts",
+    ],
+    
+    # === FRONTEND -> BACKEND CONNECTIONS ===
+    (ComponentType.REACT, ComponentType.FASTAPI): [
+        "Create src/lib/api.ts with typed fetch wrapper",
+        "Base URL must come from VITE_API_URL environment variable",
+        "All API functions must be typed with TypeScript interfaces",
+        "Include Authorization header with Bearer token when user is authenticated",
+        "Handle 401 errors by redirecting to login",
+    ],
+    (ComponentType.NEXTJS, ComponentType.FASTAPI): [
+        "Create src/lib/api.ts with typed fetch wrapper",
+        "Base URL must come from NEXT_PUBLIC_API_URL environment variable",
+        "All API functions must return typed responses",
+        "Include error handling for network failures",
+        "Use fetch with proper headers: Content-Type, Authorization",
+    ],
+    (ComponentType.REACT, ComponentType.EXPRESS): [
+        "Create src/api/client.ts with axios or fetch wrapper",
+        "Configure baseURL from environment variable",
+        "Add request/response interceptors for auth and error handling",
+    ],
+    (ComponentType.NEXTJS, ComponentType.EXPRESS): [
+        "Create src/lib/api.ts with typed client",
+        "Use NEXT_PUBLIC_API_URL for server URL",
+        "Handle CORS-related issues in development",
+    ],
+    
+    # === BACKEND -> DATABASE CONNECTIONS ===
+    (ComponentType.FASTAPI, ComponentType.POSTGRES): [
+        "database.py MUST use SQLAlchemy with async engine",
+        "DATABASE_URL must come from environment variable",
+        "Create get_db() dependency for session injection",
+        "Use declarative_base() for ORM model definitions",
+        "Include alembic.ini and migrations/ for database migrations",
+        "Models MUST have: id (UUID), created_at, updated_at timestamps",
+    ],
+    (ComponentType.FASTAPI, ComponentType.MONGODB): [
+        "database.py MUST use Motor for async MongoDB access",
+        "MONGODB_URI must come from environment variable",
+        "Create get_database() dependency for collection access",
+        "Use Pydantic models with ObjectId handling",
+    ],
+    (ComponentType.FASTAPI, ComponentType.SUPABASE): [
+        "Create supabase_client.py with Supabase Python client",
+        "SUPABASE_URL and SUPABASE_KEY from environment",
+        "Use Supabase Auth for user management",
+        "Enable Row Level Security (RLS) in migrations",
+    ],
+    (ComponentType.EXPRESS, ComponentType.POSTGRES): [
+        "Use Prisma ORM with PostgreSQL provider",
+        "DATABASE_URL in .env for connection string",
+        "Create prisma/schema.prisma with data models",
+        "Run prisma generate after schema changes",
+    ],
+    (ComponentType.EXPRESS, ComponentType.MONGODB): [
+        "Use Mongoose for MongoDB ODM",
+        "MONGODB_URI in environment for connection",
+        "Define schemas in models/ directory",
+    ],
+    
+    # === BACKEND -> AUTH CONNECTIONS ===
+    (ComponentType.FASTAPI, ComponentType.AUTH): [
+        "Create auth/jwt.py with JWT encoding/decoding using python-jose",
+        "Create auth/password.py with bcrypt for password hashing",
+        "SECRET_KEY must come from environment variable",
+        "Implement get_current_user dependency for protected routes",
+        "Create /auth/login, /auth/register, /auth/me endpoints",
+    ],
+    (ComponentType.EXPRESS, ComponentType.AUTH): [
+        "Use jsonwebtoken for JWT handling",
+        "Use bcryptjs for password hashing",
+        "Create auth middleware in middleware/auth.ts",
+        "JWT_SECRET from environment variable",
+    ],
+    
+    # === BACKEND -> PAYMENTS ===
+    (ComponentType.FASTAPI, ComponentType.STRIPE): [
+        "Create billing/stripe.py with Stripe client",
+        "STRIPE_SECRET_KEY from environment variable",
+        "Implement /billing/create-checkout-session endpoint",
+        "Implement /webhooks/stripe with signature verification",
+        "Store customer_id on User model",
+    ],
+    (ComponentType.EXPRESS, ComponentType.STRIPE): [
+        "Use stripe npm package",
+        "Create routes/billing.ts with checkout and webhook routes",
+        "Verify webhook signatures with STRIPE_WEBHOOK_SECRET",
+    ],
+    
+    # === BACKEND -> CACHE ===
+    (ComponentType.FASTAPI, ComponentType.REDIS): [
+        "Create cache/redis.py with aioredis connection pool",
+        "REDIS_URL from environment variable",
+        "Implement cache decorator for expensive operations",
+        "Use Redis for session storage if needed",
+    ],
+    
+    # === BACKEND -> AI ===
+    (ComponentType.FASTAPI, ComponentType.OPENAI): [
+        "Create services/openai.py with OpenAI client",
+        "OPENAI_API_KEY from environment variable",
+        "Implement streaming responses for chat endpoints",
+        "Handle rate limits with exponential backoff",
+    ],
+}
+
+
+# ============================================================================
 # DATA STRUCTURES
 # ============================================================================
 
@@ -661,7 +803,7 @@ class ArchitectureTranslator:
         # =====================================================================
         # This is the critical piece that converts nodes → code-gen instructions.
         # Each node type adds specific, actionable instructions for the LLM.
-        implementation_instructions = self._build_implementation_instructions(components)
+        implementation_instructions = self._build_implementation_instructions(components, edges)
         
         logger.info(f"Generated {len(implementation_instructions)} implementation instructions")
         
@@ -677,22 +819,28 @@ class ArchitectureTranslator:
     
     def _build_implementation_instructions(
         self, 
-        components: Dict[str, TranslatedComponent]
+        components: Dict[str, TranslatedComponent],
+        edges: List[Dict[str, Any]] = None
     ) -> List[str]:
         """
-        Build implementation-specific instructions based on detected nodes.
+        Build implementation-specific instructions based on detected nodes AND edges.
         
         This is the SEMANTIC GLUE that bridges:
         - Visual architecture (nodes) → Working code (implementation)
+        - Visual connections (edges) → Integration code (API clients, auth, etc.)
         
-        Each node type adds specific, actionable instructions that the LLM
-        MUST follow when generating code.
+        Each node type and edge connection adds specific, actionable instructions 
+        that the LLM MUST follow when generating code.
         
         Returns:
             List of instruction strings to include in the prompt
         """
         instructions = []
         seen_types = set()
+        
+        # === NODE-BASED INSTRUCTIONS ===
+        instructions.append("=== COMPONENT REQUIREMENTS ===")
+        instructions.append("")
         
         for comp in components.values():
             comp_type = comp.component_type
@@ -711,7 +859,63 @@ class ArchitectureTranslator:
                 instructions.extend(type_instructions)
                 instructions.append("")  # Blank line separator
         
+        # === EDGE-BASED INVARIANTS (Connection Requirements) ===
+        if edges:
+            edge_instructions = self._build_edge_invariants(components, edges)
+            if edge_instructions:
+                instructions.append("=== CONNECTION INVARIANTS (CRITICAL) ===")
+                instructions.append("These are REQUIRED based on how your components are connected:")
+                instructions.append("")
+                instructions.extend(edge_instructions)
+        
         return instructions
+    
+    def _build_edge_invariants(
+        self,
+        components: Dict[str, TranslatedComponent],
+        edges: List[Dict[str, Any]]
+    ) -> List[str]:
+        """
+        Build edge-based code invariants from the graph connections.
+        
+        When two nodes are connected, specific code patterns are REQUIRED.
+        This makes the visual graph actually drive code generation.
+        """
+        invariants = []
+        seen_edges = set()
+        
+        for edge in edges:
+            source_id = edge.get("source", "")
+            target_id = edge.get("target", "")
+            
+            source_comp = components.get(source_id)
+            target_comp = components.get(target_id)
+            
+            if not source_comp or not target_comp:
+                continue
+            
+            source_type = source_comp.component_type
+            target_type = target_comp.component_type
+            
+            # Check for matching edge invariant
+            edge_key = (source_type, target_type)
+            
+            # Avoid duplicates
+            if edge_key in seen_edges:
+                continue
+            seen_edges.add(edge_key)
+            
+            # Look up edge invariants
+            edge_rules = EDGE_INVARIANTS.get(edge_key, [])
+            
+            if edge_rules:
+                invariants.append(f"[{source_type.value.upper()} → {target_type.value.upper()}]")
+                invariants.append(f"Because {source_comp.name} connects to {target_comp.name}:")
+                for rule in edge_rules:
+                    invariants.append(f"  • {rule}")
+                invariants.append("")
+        
+        return invariants
 
 
 # ============================================================================
