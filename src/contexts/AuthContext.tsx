@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 
-const DEV_BYPASS_AUTH = true;
+const DEV_BYPASS_AUTH = false;
 
 interface User {
   id: string;
