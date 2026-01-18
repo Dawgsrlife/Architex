@@ -192,22 +192,29 @@ Frontend will be available at http://localhost:3000
 6. **Frontend receives JWT** → Stores in localStorage
 7. **User redirected to /projects** → Shows authenticated projects
 8. **User submits job** → POST /jobs with architecture spec
-9. **Backend processes job** → 
-   - Authorizes via Cline (Authorized Mlink)
-   - Generates architecture via Gemini AI
-   - Creates GitHub repository if needed
-   - Updates MongoDB with results
+9. **FastAPI Background Task** processes job:
+   - Receives job
+   - Converts `architecture_spec` into instructions for Cline
+   - Calls `run_agent(result)`
+10. **Agent Runner** executes:
+    - Initializes local filesystem at `/tmp/<JobID>/`
+    - Initializes GitHub repository
+    - runs **Cline + Gemini** to generate codebase based on instructions
+    - Writes code to local filesystem
+    - Performs single commit + push to GitHub
+    - Updates Database with status
 
 ## Key Integrations
 
-### Cline (Authorized Mlink)
-- Authorization layer for operations
-- Ensures secure access to resources
-- Located in `backend/services/cline.py`
+### Cline (Agent Runner)
+- Acts as the core coding agent
+- powered by Gemini Models
+- Receives instructions from the Background Task
+- Generates and writes the actual codebase to `/tmp/<JobID>/`
 
 ### Gemini AI
-- Generates architecture from natural language
-- Code generation capabilities
+- Provides intelligence for Cline
+- Generates code based on prompts
 - Located in `backend/services/gemini.py`
 
 ### GitHub API

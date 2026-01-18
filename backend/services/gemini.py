@@ -17,7 +17,8 @@ class GeminiService:
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
         if api_key:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            # Use gemini-2.0-flash for fast, cost-effective generation
+            self.model = genai.GenerativeModel('gemini-2.0-flash')
         else:
             logger.warning("GOOGLE_GEMINI_API_KEY not set")
             self.model = None
@@ -79,36 +80,93 @@ class GeminiService:
             logger.error(f"Error generating architecture: {str(e)}")
             raise
     
-    async def generate_code(
-        self, 
-        prompt: str, 
-        context: Optional[str] = None,
-        language: str = "typescript"
+    async def generate_agent_response(
+        self,
+        history: list[dict],
+        tools: Optional[list[dict]] = None
     ) -> Dict[str, Any]:
-        """Generate code from natural language prompt"""
+        """
+        Generate a response in an agentic loop, supporting tools.
+        
+        Args:
+            history: List of message dicts (e.g. [{"role": "user", "parts": ["..."]}])
+            tools: List of tool definitions (schema) - currently unused as we simulate tools via prompt, 
+                   but kept for future native tool integration.
+                   
+        Returns:
+            Dict containing:
+            - type: "text" or "tool_use"
+            - content: Message content or Tool call details
+        """
         if not self.model:
             raise ValueError("Gemini API not configured")
         
-        full_prompt = f"""
-        Generate {language} code for the following:
-        
-        {prompt}
-        """
-        
-        if context:
-            full_prompt += f"\n\nContext: {context}"
-        
-        full_prompt += "\n\nProvide production-ready code with comments."
-        
+        # Convert history to Gemini format if needed, implementation depends on library version
+        # For now, we'll construct a chat session
         try:
-            response = self.model.generate_content(full_prompt)
+            chat = self.model.start_chat(history=history[:-1])
+            last_message = history[-1]["parts"][0]
             
-            return {
-                "code": response.text,
-                "success": True
+            # We append a system instruction to the last message to enforce tool usage format
+            # This is a "simulated" tool use approach for reliability across model versions
+            system_instruction = """
+            You are an expert coding agent. You can read files, write files, and run commands.
+            To use a tool, you MUST respond with a JSON object in the following format ONLY, and no other text:
+            
+            {
+                "tool": "tool_name",
+                "params": { ... }
             }
+            
+            Available tools:
+            1. write_file(path: str, content: str) - Write code to a file. Create directories if needed.
+            2. read_file(path: str) - Read a file's content.
+            3. list_files(path: str) - List files in a directory.
+            4. task_complete(message: str) - Signal that the architecture generation is finished.
+            
+            If you want to just speak to the user or explain your thought process, use the "text" tool (conceptual):
+            Just respond with normal text if you are not using a tool, but prefer using tools to make progress.
+            However, since I need to parse your output, if you want to say something, wrap it in:
+            {
+                "tool": "speak",
+                "params": { "message": "..." }
+            }
+            """
+            
+            full_prompt = f"{system_instruction}\n\nUser Message: {last_message}"
+            
+            response = chat.send_message(full_prompt)
+            text_response = response.text
+            
+            # Simple parsing logic
+            import json
+            import re
+            
+            # Try to find JSON in the response
+            try:
+                # Look for { ... } structure
+                json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
+                if json_match:
+                    tool_call = json.loads(json_match.group(0))
+                    return {
+                        "type": "tool_use",
+                        "tool": tool_call.get("tool"),
+                        "params": tool_call.get("params")
+                    }
+                else:
+                    return {
+                        "type": "text",
+                        "content": text_response
+                    }
+            except:
+                # Fallback to text if parsing fails
+                return {
+                    "type": "text",
+                    "content": text_response
+                }
+                
         except Exception as e:
-            logger.error(f"Error generating code: {str(e)}")
+            logger.error(f"Error in agent generation: {str(e)}")
             raise
 
 # Global instance
