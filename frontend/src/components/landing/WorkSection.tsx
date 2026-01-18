@@ -10,19 +10,23 @@ gsap.registerPlugin(ScrollTrigger);
 const workItems = [
   { 
     title: "Full-stack applications", 
-    image: "/assets/pexels-thisisengineering-3862377.jpg"
+    description: "Complete web and mobile apps with modern frameworks",
+    image: "/assets/hero_gen_1.png"
   },
   { 
     title: "API architectures", 
-    image: "/assets/pexels-cottonbro-9667824.jpg"
+    description: "RESTful and GraphQL APIs built for performance",
+    image: "/assets/hero_gen_2.png"
   },
   { 
     title: "Data pipelines", 
-    image: "/assets/pexels-cottonbro-9665180.jpg"
+    description: "ETL workflows and real-time data processing",
+    image: "/assets/hero_gen_3.png"
   },
   { 
     title: "Cloud infrastructure", 
-    image: "/assets/pexels-tima-miroshnichenko-6615230.jpg"
+    description: "Scalable deployments on AWS, GCP, and Azure",
+    image: "/assets/hero_gen_4.png"
   },
 ];
 
@@ -80,21 +84,22 @@ export function WorkSection() {
                   </svg>
                 </button>
                 
-                <div className={`grid transition-all duration-500 ease-out ${expandedItem === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                  <div className="overflow-hidden">
-                    <div className="pb-8 pl-12">
-                      <div className="relative aspect-[16/10] max-w-md overflow-hidden grayscale hover:grayscale-0 transition-all duration-700">
-                        <Image 
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 400px"
-                          className="object-cover"
-                        />
+<div className={`grid transition-all duration-500 ease-out ${expandedItem === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                    <div className="overflow-hidden">
+                      <div className="pb-8 pl-12 flex gap-8 items-start">
+                        <div className="relative aspect-[16/10] w-80 overflow-hidden">
+                          <Image 
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            sizes="320px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <p className="text-stone-500 text-sm max-w-xs pt-2">{item.description}</p>
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             ))}
           </div>
