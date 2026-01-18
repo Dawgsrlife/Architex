@@ -10,9 +10,14 @@ export function Navbar() {
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    
+    const token = document.cookie.includes("auth_token=");
+    setIsLoggedIn(token);
+    
     gsap.set(navRef.current, { opacity: 0, y: -20 });
     gsap.to(navRef.current, { 
       opacity: 1, 
@@ -70,26 +75,29 @@ export function Navbar() {
             Architex
           </Link>
   
-          <div className="flex items-center gap-6">
-            <Link 
-              href="/explore" 
-              className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
-            >
-              Explore
-            </Link>
+          <div className="flex items-center gap-8">
+            <a href="#work" className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}>
+              Work
+            </a>
+
+            <a href="#process" className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}>
+              Process
+            </a>
+
+            {!isLoggedIn && (
+              <Link 
+                href="/login" 
+                className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
+              >
+                Sign In
+              </Link>
+            )}
 
             <Link 
-              href="/learn-more" 
-              className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
-            >
-              Docs
-            </Link>
-
-            <Link 
-              href="/login" 
+              href={isLoggedIn ? "/dashboard/new" : "/login"}
               className={`text-[11px] px-4 py-2 rounded-full transition-all duration-500 ease-out tracking-widest uppercase font-medium ${buttonStyle}`}
             >
-              Sign In
+              Start Project
             </Link>
           </div>
         </div>

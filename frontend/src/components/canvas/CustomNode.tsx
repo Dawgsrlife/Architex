@@ -25,19 +25,23 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
   };
 
+  const handleStyle = {
+    width: 12,
+    height: 12,
+    border: `2px solid ${data.color}`,
+    backgroundColor: "white",
+    cursor: "crosshair",
+  };
+
   return (
     <div
       className={`
-        px-4 py-3 rounded-xl border-2 transition-all duration-200 min-w-[160px] relative
+        px-4 py-3 rounded-xl border transition-all duration-200 min-w-[160px] relative bg-white
         ${selected
-          ? "border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
-          : "border-stone-700/50 hover:border-stone-600"
+          ? "border-stone-900 shadow-lg scale-105"
+          : "border-stone-200 hover:border-stone-300 hover:shadow-sm"
         }
       `}
-      style={{
-        background: `linear-gradient(135deg, ${data.color}15 0%, ${data.color}05 100%)`,
-        backdropFilter: "blur(8px)",
-      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -55,48 +59,24 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
 
       <Handle
         id="top"
-        type="source"
-        position={Position.Top}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, top: -6 }}
-      />
-      <Handle
-        id="top-target"
         type="target"
         position={Position.Top}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, top: -6 }}
+        style={{ ...handleStyle, top: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
 
       <Handle
         id="left"
-        type="source"
-        position={Position.Left}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, left: -6 }}
-      />
-      <Handle
-        id="left-target"
         type="target"
         position={Position.Left}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, left: -6 }}
+        style={{ ...handleStyle, left: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
 
       <div className="flex items-center gap-3">
         <div
           className={`flex items-center justify-center w-9 h-9 rounded-lg p-1.5 ${
-            needsWhiteBg ? "bg-white" : ""
+            needsWhiteBg ? "bg-white border border-stone-200" : ""
           }`}
-          style={{ backgroundColor: needsWhiteBg ? "white" : `${data.color}20` }}
+          style={{ backgroundColor: needsWhiteBg ? "white" : `${data.color}15` }}
         >
           {isImageUrl && !imageError ? (
             <img
@@ -110,8 +90,8 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
           )}
         </div>
         <div className="flex-1">
-          <div className="font-medium text-sm text-white">{data.label}</div>
-          <div className="text-xs text-stone-400 capitalize">{data.category}</div>
+          <div className="font-medium text-sm text-stone-900">{data.label}</div>
+          <div className="text-xs text-stone-500 capitalize">{data.category}</div>
         </div>
       </div>
 
@@ -119,38 +99,14 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
         id="bottom"
         type="source"
         position={Position.Bottom}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, bottom: -6 }}
-      />
-      <Handle
-        id="bottom-target"
-        type="target"
-        position={Position.Bottom}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, bottom: -6 }}
+        style={{ ...handleStyle, bottom: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
 
       <Handle
         id="right"
         type="source"
         position={Position.Right}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, right: -6 }}
-      />
-      <Handle
-        id="right-target"
-        type="target"
-        position={Position.Right}
-        className={`!w-3 !h-3 !border-2 !bg-stone-900 transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, right: -6 }}
+        style={{ ...handleStyle, right: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
     </div>
   );

@@ -87,7 +87,7 @@ export function WorkSection() {
 <div className={`grid transition-all duration-500 ease-out ${expandedItem === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                     <div className="overflow-hidden">
                       <div className="pb-8 pl-12 flex gap-8 items-start">
-                        <div className="relative aspect-[16/10] w-80 overflow-hidden">
+                        <div className="relative aspect-[16/10] w-80 overflow-hidden" style={{ position: 'relative' }}>
                           <Image 
                             src={item.image}
                             alt={item.title}

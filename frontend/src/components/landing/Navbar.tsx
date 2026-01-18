@@ -4,30 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 
-const workItems = [
-  { title: "Full-stack", desc: "Web & mobile apps" },
-  { title: "APIs", desc: "REST & GraphQL" },
-  { title: "Data Pipelines", desc: "ETL & processing" },
-  { title: "Cloud Infra", desc: "AWS, GCP, Azure" },
-];
-
-const processItems = [
-  { title: "Draw", desc: "Sketch your system" },
-  { title: "Define", desc: "Set requirements" },
-  { title: "Generate", desc: "AI writes code" },
-  { title: "Deploy", desc: "Ship to production" },
-];
-
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const lastScrollY = useRef(0);
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    
+    const token = document.cookie.includes("auth_token=");
+    setIsLoggedIn(token);
+    
     gsap.set(navRef.current, { opacity: 0, y: -20 });
     gsap.to(navRef.current, { 
       opacity: 1, 
@@ -86,61 +76,25 @@ export function Navbar() {
           </Link>
   
           <div className="flex items-center gap-8">
-            <div 
-              className="relative"
-              onMouseEnter={() => setOpenDropdown("work")}
-              onMouseLeave={() => setOpenDropdown(null)}
-            >
-              <a href="#work" className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium flex items-center gap-1 ${linkColor}`}>
-                Work
-                <svg className={`w-3 h-3 transition-transform duration-200 ${openDropdown === "work" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </a>
-<div className={`absolute top-full left-0 pt-2 w-44 transition-all duration-200 ${openDropdown === "work" ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
-                  <div className="bg-white border border-stone-100 shadow-lg p-3 space-y-3">
-                    {workItems.map((item, i) => (
-                      <a key={i} href="#work" className="block group">
-                        <span className="text-sm text-stone-900 group-hover:text-stone-600 transition-colors">{item.title}</span>
-                        <span className="block text-xs text-stone-400">{item.desc}</span>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-            </div>
+            <a href="#work" className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}>
+              Work
+            </a>
 
-            <div 
-              className="relative"
-              onMouseEnter={() => setOpenDropdown("process")}
-              onMouseLeave={() => setOpenDropdown(null)}
-            >
-              <a href="#process" className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium flex items-center gap-1 ${linkColor}`}>
-                Process
-                <svg className={`w-3 h-3 transition-transform duration-200 ${openDropdown === "process" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </a>
-<div className={`absolute top-full left-0 pt-2 w-44 transition-all duration-200 ${openDropdown === "process" ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
-                  <div className="bg-white border border-stone-100 shadow-lg p-3 space-y-3">
-                    {processItems.map((item, i) => (
-                      <a key={i} href="#process" className="block group">
-                        <span className="text-sm text-stone-900 group-hover:text-stone-600 transition-colors">{item.title}</span>
-                        <span className="block text-xs text-stone-400">{item.desc}</span>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-            </div>
+            <a href="#process" className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}>
+              Process
+            </a>
+
+            {!isLoggedIn && (
+              <Link 
+                href="/login" 
+                className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
+              >
+                Sign In
+              </Link>
+            )}
 
             <Link 
-              href="/login" 
-              className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
-            >
-              Sign In
-            </Link>
-
-            <Link 
-              href="/projects/new" 
+              href={isLoggedIn ? "/dashboard/new" : "/login"}
               className={`text-[11px] px-4 py-2 rounded-full transition-all duration-500 ease-out tracking-widest uppercase font-medium ${buttonStyle}`}
             >
               Start Project

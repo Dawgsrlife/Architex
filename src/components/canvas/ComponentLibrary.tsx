@@ -87,17 +87,17 @@ export default function ComponentLibrary() {
   })).filter((category) => category.components.length > 0);
 
   return (
-    <div className="h-full flex flex-col bg-stone-950 border-r border-stone-800/50">
-      <div className="p-4 border-b border-stone-800/50">
-        <h2 className="text-sm font-semibold text-white mb-3">Components</h2>
+    <div className="h-full flex flex-col bg-white">
+      <div className="p-4 border-b border-stone-100">
+        <h2 className="text-sm font-semibold text-stone-900 mb-3">Components</h2>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input
             type="text"
-            placeholder="Search components..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 rounded-lg bg-stone-900 border border-stone-800 text-white text-sm placeholder-stone-500 focus:outline-none focus:border-stone-700 transition-colors"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-stone-50 border border-stone-200 text-stone-900 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/5 focus:border-stone-300 transition-colors"
           />
         </div>
       </div>
@@ -109,20 +109,20 @@ export default function ComponentLibrary() {
             <div key={category.id} className="mb-1">
               <button
                 onClick={() => toggleCategory(category.id)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-stone-900 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors text-left"
               >
                 {expandedCategories.has(category.id) ? (
-                  <ChevronDown className="w-4 h-4 text-stone-500" />
+                  <ChevronDown className="w-4 h-4 text-stone-400" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-stone-500" />
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
                 )}
                 {IconComponent && (
-                  <IconComponent className="w-4 h-4 text-stone-400" />
+                  <IconComponent className="w-4 h-4 text-stone-500" />
                 )}
-                <span className="text-sm font-medium text-stone-300">
+                <span className="text-sm font-medium text-stone-700">
                   {category.name}
                 </span>
-                <span className="ml-auto text-xs text-stone-600">
+                <span className="ml-auto text-xs text-stone-400">
                   {category.components.length}
                 </span>
               </button>
@@ -143,14 +143,14 @@ export default function ComponentLibrary() {
                           component.color
                         )
                       }
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing hover:bg-stone-900/80 transition-all duration-200 border border-transparent hover:border-stone-800"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing hover:bg-stone-50 transition-all duration-200 border border-transparent hover:border-stone-200"
                     >
                       <ComponentIcon
                         icon={component.icon}
                         color={component.color}
                         name={component.name}
                       />
-                      <span className="text-sm text-stone-300 truncate">
+                      <span className="text-sm text-stone-600 truncate">
                         {component.name}
                       </span>
                     </div>
@@ -162,8 +162,8 @@ export default function ComponentLibrary() {
         })}
       </div>
 
-      <div className="p-3 border-t border-stone-800/50">
-        <p className="text-xs text-stone-600 text-center">
+      <div className="p-3 border-t border-stone-100">
+        <p className="text-xs text-stone-400 text-center">
           Drag components to canvas
         </p>
       </div>
@@ -187,9 +187,9 @@ function ComponentIcon({
   return (
     <div
       className={`flex items-center justify-center w-7 h-7 rounded-md p-1 flex-shrink-0 ${
-        needsWhiteBg ? "bg-white" : ""
+        needsWhiteBg ? "bg-white border border-stone-200" : ""
       }`}
-      style={{ backgroundColor: needsWhiteBg ? "white" : `${color}20` }}
+      style={{ backgroundColor: needsWhiteBg ? "white" : `${color}15` }}
     >
       {isImageUrl && !imageError ? (
         <img

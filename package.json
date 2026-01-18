@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "dev": "cd frontend && next dev --turbopack",
+    "build": "cd frontend && next build",
+    "start": "cd frontend && next start",
+    "lint": "cd frontend && next lint",
+    "lint:fix": "cd frontend && next lint --fix",
     "type-check": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "clean": "rm -rf .next out node_modules/.cache",
+    "format": "prettier --write \"frontend/src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"frontend/src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "clean": "rm -rf frontend/.next out node_modules/.cache",
     "postinstall": "prisma generate || echo 'Prisma not configured yet'"
   },
   "dependencies": {

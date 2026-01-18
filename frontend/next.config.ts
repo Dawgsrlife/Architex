@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  distDir: '.next',
   images: {
     remotePatterns: [
       {
@@ -10,6 +12,7 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_APP_NAME: 'Architex',
+    NEXT_PUBLIC_GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
   },
 };
 
