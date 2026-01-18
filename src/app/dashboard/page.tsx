@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { 
   Plus, Search, Grid3X3, List, MoreHorizontal, Clock, FolderOpen,
-  Trash2, Copy, ExternalLink, LogOut, Settings, ChevronDown, Layers,
+  Trash2, Copy, ExternalLink, LogOut, Settings, Layers,
   ArrowRight, ArrowUpRight
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,29 +36,22 @@ function DashboardNav() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-stone-200/60">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="text-lg font-display font-bold tracking-tight text-stone-900">Architex</Link>
-            <div className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard" className="px-4 py-2 text-sm text-stone-900 font-medium">Dashboard</Link>
-              <Link href="/explore" className="px-4 py-2 text-sm text-stone-500 hover:text-stone-900 transition-colors">Explore</Link>
-              <Link href="/sketch" className="px-4 py-2 text-sm text-stone-500 hover:text-stone-900 transition-colors">Sketch</Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between h-14">
+          <Link href="/dashboard" className="text-lg font-display font-bold tracking-tight text-stone-900">Architex</Link>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/new" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-all">
+              <Plus className="w-3.5 h-3.5" />New
+            </Link>
             <div className="relative">
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2 p-1.5 rounded-full hover:bg-stone-100 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center text-stone-600 text-sm font-medium overflow-hidden">
-                  {user?.avatarUrl ? <img src={user.avatarUrl} alt={user.name || "User"} className="w-full h-full object-cover" /> : (user?.name?.charAt(0) || user?.email?.charAt(0) || "U")}
-                </div>
-                <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+              <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center text-stone-600 text-sm font-medium overflow-hidden hover:ring-2 hover:ring-stone-300 transition-all">
+                {user?.avatarUrl ? <img src={user.avatarUrl} alt={user.name || "User"} className="w-full h-full object-cover" /> : (user?.name?.charAt(0) || user?.email?.charAt(0) || "U")}
               </button>
               {userMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-2 w-44 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden">
                     <div className="p-3 border-b border-stone-100">
-                      <p className="text-sm font-medium text-stone-900">{user?.name || "User"}</p>
+                      <p className="text-sm font-medium text-stone-900 truncate">{user?.name || "User"}</p>
                       <p className="text-xs text-stone-500 truncate">{user?.email}</p>
                     </div>
                     <div className="p-1">
