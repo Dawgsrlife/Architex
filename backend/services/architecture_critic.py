@@ -464,24 +464,25 @@ class ArchitectureCritic:
             logger.info(f"LLM critique found {len(llm_issues)} issues")
         
         # Step 4: Determine blocking status
-        # DEMO MODE: Only block on truly critical structural issues (no nodes/edges)
-        # HIGH severity issues (like missing auth) become warnings, not blockers
+        # DEMO MODE DISABLED: Never block generation - all issues become warnings
+        # This allows users to iterate on their architecture without being blocked
         critical_count = sum(1 for i in all_issues if i.severity == IssueSeverity.CRITICAL)
         high_count = sum(1 for i in all_issues if i.severity == IssueSeverity.HIGH)
         
-        # Only block on CRITICAL issues (structural failures like no nodes, no edges)
-        # HIGH issues are logged as warnings but don't block generation
-        blocking = critical_count > 0
+        # DEMO MODE: NEVER BLOCK - convert all issues to warnings
+        # Users can see the warnings but generation proceeds regardless
+        # This is intentional to enable rapid iteration and demos
+        blocking = False  # DISABLED: was `critical_count > 0`
         
         # Step 5: Build summary
         if not all_issues:
             summary = "Architecture looks sound. No significant issues detected."
-        elif blocking:
-            summary = f"Architecture has {critical_count} critical structural issues. Fix these before generating."
+        elif critical_count > 0:
+            summary = f"Architecture has {critical_count} critical issues (proceeding with warnings). Consider fixing: missing edges or vague prompt."
         elif high_count > 0:
-            summary = f"Architecture has {high_count} high-severity recommendations. Generation will proceed with warnings."
+            summary = f"Architecture has {high_count} high-severity recommendations. Generation proceeding with warnings."
         else:
-            summary = f"Architecture has {len(all_issues)} minor issues to consider. Generation will proceed."
+            summary = f"Architecture has {len(all_issues)} minor issues to consider. Generation proceeding."
         
         return CriticResult(
             summary=summary,

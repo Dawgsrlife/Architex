@@ -107,7 +107,9 @@ SCAFFOLD_TEMPLATES: List[FileTemplate] = [
     "react-dom": "^18",
     "lucide-react": "^0.294.0",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "framer-motion": "^10.16.0",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
     "typescript": "^5",

@@ -88,19 +88,42 @@ async def create_job(
     Create a new architecture generation job.
     
     Flow:
-    1. Validate project exists
-    2. Append prompt to project's prompts_history
-    3. Update project's current_nodes
-    4. Create job document
-    5. Queue background job processing
+    1. Validate project_id is valid
+    2. Validate project exists
+    3. Append prompt to project's prompts_history
+    4. Update project's current_nodes
+    5. Create job document
+    6. Queue background job processing
     """
     user_id = get_user_id(user)
     project_id = job_request.project_id
     spec = job_request.architecture_spec
     
+    # FAIL FAST: Validate project_id is not empty, undefined, null, or invalid
+    logger.info(f"📋 [JOB] Received project_id: '{project_id}' (type: {type(project_id).__name__})")
+    
+    invalid_values = {"", "undefined", "null", "None", "new"}
+    if not project_id or project_id.strip() in invalid_values:
+        logger.error(f"❌ [JOB] Invalid project_id received: '{project_id}'")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid project_id: '{project_id}'. A valid project ID is required."
+        )
+    
+    # Additional validation: check if it looks like a valid MongoDB ObjectId (24 hex chars)
+    if len(project_id) < 20:
+        logger.error(f"❌ [JOB] project_id too short: '{project_id}' (length: {len(project_id)})")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid project_id format: '{project_id}'. Expected a valid MongoDB ObjectId."
+        )
+    
+    logger.info(f"✅ [JOB] Project ID validated: {project_id}")
+    
     # Verify project exists
     project = await projects_repo.get_project(user_id, project_id)
     if not project:
+        logger.error(f"❌ [JOB] Project not found in database: '{project_id}' for user '{user_id}'")
         raise HTTPException(status_code=404, detail="Project not found")
     
     # Append prompt to project history

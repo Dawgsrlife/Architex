@@ -211,10 +211,12 @@ class JobWorker:
             print(f"\n📍 [JOB {job_id}] PHASE 4: Determining generation mode...")
             
             # Determine generation mode
-            constrained_mode = os.getenv("CONSTRAINED", "true").lower() in ("true", "1", "yes")
+            # DEMO MODE DEFAULTS: Fast, reliable template generation
+            constrained_mode = os.getenv("CONSTRAINED", "false").lower() in ("true", "1", "yes")  # Default OFF for demo
             use_llm = os.getenv("USE_LLM", "").lower() in ("true", "1", "yes")
-            fake_llm = os.getenv("FAKE_LLM", "").lower() in ("true", "1", "yes")
-            skip_critic = os.getenv("SKIP_CRITIC", "").lower() in ("true", "1", "yes")
+            fake_llm = os.getenv("FAKE_LLM", "true").lower() in ("true", "1", "yes")  # Default ON for demo (instant templates)
+            # DEMO MODE: Skip critic by default to speed up generation
+            skip_critic = os.getenv("SKIP_CRITIC", "true").lower() in ("true", "1", "yes")
             
             # Check for LLM API keys
             has_gemini_key = bool(os.getenv("GOOGLE_GEMINI_API_KEY"))
@@ -267,18 +269,16 @@ class JobWorker:
                     for issue in critic_result.issues[:5]:
                         await self._log(user_id, job_id, f"  [{issue.severity.value.upper()}] {issue.problem[:80]}")
                     
+                    # DEMO MODE: NEVER BLOCK - Critic is advisory only
+                    # The blocking logic has been completely removed for hackathon demos
                     if critic_result.blocking:
-                        # TRULY BLOCKED - structural issues like no nodes/edges
-                        await self._log(user_id, job_id, "❌ BLOCKED: Architecture has critical structural issues")
-                        await jobs_repo.update_job_status(
-                            userId=user_id,
-                            jobId=job_id,
-                            status=JobStatus.FAILED.value,
-                            error=f"Architecture blocked: {critic_result.summary}",
-                            warnings=warnings + [i.problem for i in critic_result.issues]
-                        )
-                        return
-                    elif len(critic_result.issues) > 0:
+                        # Log it but PROCEED ANYWAY
+                        print(f"⚠️ [JOB {job_id}] CRITIC WANTED TO BLOCK, BUT WE'RE IGNORING IT FOR DEMO")
+                        await self._log(user_id, job_id, "⚠️ Critic raised concerns, but proceeding with generation...")
+                        # Force it to not block
+                        critic_result.blocking = False
+                    
+                    if len(critic_result.issues) > 0:
                         # DEMO MODE: Has issues but not blocking - proceed with warnings
                         high_issues = [i for i in critic_result.issues if i.severity.value in ["high", "critical"]]
                         if high_issues:

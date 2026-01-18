@@ -399,20 +399,69 @@ class GenerationPlanBuilder:
     # === CONFIG FILE BUILDERS ===
     
     def _add_package_json(self, frontend: str):
-        deps = ["react", "react-dom", "typescript", "tailwindcss"]
-        if frontend == "nextjs":
-            deps.extend(["next", "@types/node", "@types/react"])
+        """Generate package.json with ALL required dependencies for a real SaaS app."""
+        app_slug = self.model.app_name.lower().replace(" ", "-").replace("_", "-")
         
         self.files.append(FileInstruction(
             path="package.json",
             file_type=FileType.CONFIG,
-            purpose="NPM package configuration",
+            purpose=f"NPM package configuration for {self.model.app_name} - MUST include all UI dependencies",
             must_include=[
-                f'"name": "{self.model.app_name.lower().replace(" ", "-")}"',
-                '"scripts"',
-                *[f'"{dep}"' for dep in deps],
+                f'"name": "{app_slug}"',
+                '"version": "0.1.0"',
+                '"private": true',
+                '"scripts": { "dev": "next dev", "build": "next build", "start": "next start", "lint": "next lint" }',
+                # Core dependencies
+                '"next": "14.0.4"',
+                '"react": "^18"',
+                '"react-dom": "^18"',
+                # UI dependencies - CRITICAL for real app look
+                '"lucide-react": "^0.294.0"',
+                '"clsx": "^2.0.0"',
+                '"tailwind-merge": "^2.2.0"',
+                '"framer-motion": "^10.16.0"',
+                # Data fetching
+                '"axios": "^1.6.0"',
+                # Dev dependencies
+                '"typescript": "^5"',
+                '"@types/node": "^20"',
+                '"@types/react": "^18"',
+                '"@types/react-dom": "^18"',
+                '"autoprefixer": "^10.0.1"',
+                '"postcss": "^8"',
+                '"tailwindcss": "^3.3.0"',
             ],
-            must_not_include=["private dependencies"],
+            must_not_include=["placeholder", "TODO"],
+            template_hint=f'''{{
+  "name": "{app_slug}",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {{
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  }},
+  "dependencies": {{
+    "next": "14.0.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "lucide-react": "^0.294.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.2.0",
+    "framer-motion": "^10.16.0",
+    "axios": "^1.6.0"
+  }},
+  "devDependencies": {{
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0"
+  }}
+}}''',
         ))
     
     def _add_typescript_config(self):
@@ -1331,17 +1380,302 @@ export function {primary_entity.name}List() {{
         ))
     
     def _add_nextjs_dashboard(self):
-        entity_cards = [entity.plural_name for entity in self.model.entities]
+        """
+        DEMO-READY DASHBOARD
+        
+        This generates an interactive dashboard that:
+        1. Tries to fetch from API
+        2. Falls back to mock data if API fails
+        3. Has working local state for add/delete operations
+        4. Looks beautiful immediately on Vercel deploy
+        """
+        entities = self.model.entities
+        entity_cards = [entity.plural_name for entity in entities]
+        
+        # Build mock data for each entity
+        primary_entity = entities[0] if entities else None
+        entity_name = primary_entity.name if primary_entity else "Item"
+        entity_plural = primary_entity.plural_name if primary_entity else "Items"
         
         self.files.append(FileInstruction(
             path="src/app/dashboard/page.tsx",
             file_type=FileType.PAGE,
-            purpose="Main dashboard with entity overviews",
+            purpose=f"DEMO-READY interactive dashboard for {self.model.app_name} with mock data fallback",
             must_include=[
-                "export default function DashboardPage",
-                *[f"// {name} overview" for name in entity_cards[:3]],
-                "statistics cards",
+                "'use client'",
+                "import { useState, useEffect } from 'react'",
+                "import { Plus, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react'",
+                "// MOCK DATA - Used when API is unavailable",
+                f"const MOCK_{entity_plural.upper()} = [",
+                "// State management",
+                f"const [items, setItems] = useState<{entity_name}[]>(MOCK_{entity_plural.upper()})",
+                "const [loading, setLoading] = useState(true)",
+                "const [apiConnected, setApiConnected] = useState(false)",
+                "// Check backend health and fetch data",
+                "useEffect(() => { checkApiAndFetch() }, [])",
+                "// Optimistic add - works even without backend",
+                "const handleAdd = () => {",
+                "  const newItem = { id: Date.now().toString(), ... }",
+                "  setItems([...items, newItem])",
+                "}",
+                "// Optimistic delete - works even without backend",
+                "const handleDelete = (id: string) => {",
+                "  setItems(items.filter(item => item.id !== id))",
+                "}",
+                "// API status indicator",
+                "apiConnected ? 'Connected' : 'Demo Mode'",
             ],
+            must_not_include=["placeholder", "Lorem ipsum", "TODO"],
+            template_hint=f"""
+'use client'
+
+import {{ useState, useEffect }} from 'react'
+import {{ Plus, Trash2, Loader2, CheckCircle, XCircle, RefreshCw }} from 'lucide-react'
+
+// ============ TYPES ============
+interface {entity_name} {{
+  id: string;
+  title: string;
+  description?: string;
+  completed?: boolean;
+  created_at: string;
+}}
+
+// ============ MOCK DATA (Fallback when API unavailable) ============
+const MOCK_{entity_plural.upper()}: {entity_name}[] = [
+  {{ id: '1', title: 'Welcome to {self.model.app_name}!', description: 'This is your first item', completed: false, created_at: new Date().toISOString() }},
+  {{ id: '2', title: 'Try adding a new item', description: 'Click the + button above', completed: false, created_at: new Date().toISOString() }},
+  {{ id: '3', title: 'Delete items by clicking trash', description: 'Hover over any item to see the delete button', completed: true, created_at: new Date().toISOString() }},
+];
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+export default function DashboardPage() {{
+  // State
+  const [items, setItems] = useState<{entity_name}[]>(MOCK_{entity_plural.upper()});
+  const [loading, setLoading] = useState(true);
+  const [apiConnected, setApiConnected] = useState(false);
+  const [newItemTitle, setNewItemTitle] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Check API health and fetch data on mount
+  useEffect(() => {{
+    checkApiAndFetch();
+  }}, []);
+
+  const checkApiAndFetch = async () => {{
+    setLoading(true);
+    try {{
+      // Check if backend is reachable
+      const healthRes = await fetch(`${{API_URL}}/`, {{ 
+        method: 'GET',
+        headers: {{ 'Content-Type': 'application/json' }},
+      }});
+      
+      if (healthRes.ok) {{
+        setApiConnected(true);
+        // Try to fetch real data
+        const dataRes = await fetch(`${{API_URL}}/{entity_plural.lower()}`);
+        if (dataRes.ok) {{
+          const data = await dataRes.json();
+          if (data.length > 0) {{
+            setItems(data);
+          }}
+        }}
+      }}
+    }} catch (err) {{
+      // API not available - use mock data (this is expected in demo mode)
+      console.log('Backend not available, using demo mode');
+      setApiConnected(false);
+    }} finally {{
+      setLoading(false);
+    }}
+  }};
+
+  // OPTIMISTIC ADD - Works immediately, syncs to API if available
+  const handleAdd = async (e: React.FormEvent) => {{
+    e.preventDefault();
+    if (!newItemTitle.trim()) return;
+
+    const newItem: {entity_name} = {{
+      id: Date.now().toString(),
+      title: newItemTitle,
+      description: 'New item',
+      completed: false,
+      created_at: new Date().toISOString(),
+    }};
+
+    // Optimistic update (instant UI feedback)
+    setItems(prev => [newItem, ...prev]);
+    setNewItemTitle('');
+
+    // Sync to API if available
+    if (apiConnected) {{
+      try {{
+        await fetch(`${{API_URL}}/{entity_plural.lower()}`, {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{ title: newItem.title }}),
+        }});
+      }} catch (err) {{
+        console.log('Sync failed, keeping local state');
+      }}
+    }}
+  }};
+
+  // OPTIMISTIC DELETE - Works immediately
+  const handleDelete = async (id: string) => {{
+    // Optimistic update
+    setItems(prev => prev.filter(item => item.id !== id));
+
+    // Sync to API if available
+    if (apiConnected) {{
+      try {{
+        await fetch(`${{API_URL}}/{entity_plural.lower()}/${{id}}`, {{ method: 'DELETE' }});
+      }} catch (err) {{
+        console.log('Sync failed');
+      }}
+    }}
+  }};
+
+  // Toggle complete
+  const handleToggle = (id: string) => {{
+    setItems(prev => prev.map(item => 
+      item.id === id ? {{ ...item, completed: !item.completed }} : item
+    ));
+  }};
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {{/* Header */}}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {self.model.app_name} Dashboard
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Manage your {entity_plural.lower()}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              {{/* API Status Indicator */}}
+              <div className={{`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${{
+                apiConnected 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              }}`}}>
+                {{apiConnected ? (
+                  <><CheckCircle className="w-4 h-4" /> Connected</>
+                ) : (
+                  <><XCircle className="w-4 h-4" /> Demo Mode</>
+                )}}
+              </div>
+              <button 
+                onClick={{checkApiAndFetch}}
+                className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <RefreshCw className={{`w-5 h-5 ${{loading ? 'animate-spin' : ''}}`}} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {{/* Main Content */}}
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {{/* Add Form */}}
+        <form onSubmit={{handleAdd}} className="mb-8">
+          <div className="flex gap-4">
+            <input
+              type="text"
+              value={{newItemTitle}}
+              onChange={{(e) => setNewItemTitle(e.target.value)}}
+              placeholder="Add a new {entity_name.lower()}..."
+              className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+            />
+            <button
+              type="submit"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <Plus className="w-5 h-5" />
+              Add
+            </button>
+          </div>
+        </form>
+
+        {{/* Stats Cards */}}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{{items.length}}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Total {entity_plural}</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="text-2xl font-bold text-green-600">{{items.filter(i => i.completed).length}}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Completed</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="text-2xl font-bold text-orange-600">{{items.filter(i => !i.completed).length}}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
+          </div>
+        </div>
+
+        {{/* Items List */}}
+        <div className="space-y-3">
+          {{loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : items.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No {entity_plural.lower()} yet. Add one above!
+            </div>
+          ) : (
+            items.map((item) => (
+              <div 
+                key={{item.id}} 
+                className={{`bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between group hover:shadow-md transition-shadow ${{
+                  item.completed ? 'opacity-60' : ''
+                }}`}}
+              >
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={{() => handleToggle(item.id)}}
+                    className={{`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${{
+                      item.completed 
+                        ? 'bg-green-500 border-green-500 text-white' 
+                        : 'border-gray-300 dark:border-gray-600 hover:border-blue-500'
+                    }}`}}
+                  >
+                    {{item.completed && <CheckCircle className="w-4 h-4" />}}
+                  </button>
+                  <div>
+                    <h3 className={{`font-medium text-gray-900 dark:text-white ${{
+                      item.completed ? 'line-through' : ''
+                    }}`}}>
+                      {{item.title}}
+                    </h3>
+                    {{item.description && (
+                      <p className="text-sm text-gray-500">{{item.description}}</p>
+                    )}}
+                  </div>
+                </div>
+                <button
+                  onClick={{() => handleDelete(item.id)}}
+                  className="p-2 text-red-600 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))
+          )}}
+        </div>
+      </main>
+    </div>
+  );
+}}
+""",
         ))
     
     def _add_nextjs_entity_pages(self, entity: DomainEntity):
