@@ -84,7 +84,7 @@ def get_llm_service(provider: Optional[str] = None) -> LLMInterface:
     Factory function to get an LLM service instance.
     
     Args:
-        provider: Explicit provider name ("groq", "gemini", "fake"). 
+        provider: Explicit provider name ("groq", "gemini", "vertex", "fake"). 
                   If None, auto-selects based on available API keys.
     
     Returns:
@@ -93,12 +93,14 @@ def get_llm_service(provider: Optional[str] = None) -> LLMInterface:
     Priority (if provider not specified):
         1. FakeLLM (if FAKE_LLM=true)
         2. Groq (if GROQ_API_KEY is set)
-        3. Gemini (if GOOGLE_GEMINI_API_KEY is set)
+        3. Vertex AI (if VERTEX_AI_API_KEY or GOOGLE_GEMINI_API_KEY with AQ. prefix)
+        4. Gemini AI Studio (if GOOGLE_GEMINI_API_KEY with AIza prefix)
     """
     # Import here to avoid circular imports
     from services.groq_service import GroqService
     from services.gemini import GeminiService
     from services.fake_llm_service import FakeLLMService
+    from services.vertex_ai_service import VertexAIService
     
     # Check for fake mode first
     fake_mode = os.getenv("FAKE_LLM", "").lower() in ("true", "1", "yes")
@@ -114,6 +116,11 @@ def get_llm_service(provider: Optional[str] = None) -> LLMInterface:
             if not service.is_configured:
                 raise ValueError("Groq API key not configured")
             return service
+        elif provider == "vertex":
+            service = VertexAIService()
+            if not service.is_configured:
+                raise ValueError("Vertex AI API key not configured")
+            return service
         elif provider == "gemini":
             service = GeminiService()
             if not service.is_configured:
@@ -122,20 +129,32 @@ def get_llm_service(provider: Optional[str] = None) -> LLMInterface:
         else:
             raise ValueError(f"Unknown LLM provider: {provider}")
     
-    # Auto-select based on available keys (Groq preferred)
+    # Auto-select based on available keys (Groq preferred for speed)
     if os.getenv("GROQ_API_KEY"):
         service = GroqService()
         if service.is_configured:
             logger.info(f"Using LLM provider: {service.provider_name}")
             return service
     
-    if os.getenv("GOOGLE_GEMINI_API_KEY"):
-        service = GeminiService()
-        if service.is_configured:
-            logger.info(f"Using LLM provider: {service.provider_name}")
-            return service
+    # Check for Vertex AI key (starts with AQ. or is a long key)
+    gemini_key = os.getenv("VERTEX_AI_API_KEY") or os.getenv("GOOGLE_GEMINI_API_KEY")
+    if gemini_key:
+        # Detect Vertex AI keys (start with AQ. or are very long)
+        is_vertex_key = gemini_key.startswith("AQ.") or len(gemini_key) > 100
+        
+        if is_vertex_key:
+            service = VertexAIService()
+            if service.is_configured:
+                logger.info(f"Using LLM provider: {service.provider_name} (Vertex AI)")
+                return service
+        else:
+            # Standard AI Studio key (AIza...)
+            service = GeminiService()
+            if service.is_configured:
+                logger.info(f"Using LLM provider: {service.provider_name} (AI Studio)")
+                return service
     
-    raise ValueError("No LLM API key configured. Set FAKE_LLM=true, GROQ_API_KEY, or GOOGLE_GEMINI_API_KEY")
+    raise ValueError("No LLM API key configured. Set FAKE_LLM=true, GROQ_API_KEY, VERTEX_AI_API_KEY, or GOOGLE_GEMINI_API_KEY")
 
 
 # Global instance - initialized lazily
