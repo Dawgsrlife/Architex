@@ -172,10 +172,22 @@ class ConstrainedGenerationPlan:
         
         This is NOT freeform. It's a deterministic compilation of the plan.
         """
+        # Get user intent from domain model
+        user_intent = self.domain_model.intent if self.domain_model.intent else "A standard software system"
+        
         lines = [
             "=" * 60,
             f"PROJECT: {self.app_name}",
             f"TYPE: {self.app_type.value}",
+            "=" * 60,
+            "",
+            "## USER INTENT (MOST IMPORTANT)",
+            "",
+            "The user wants to build:",
+            f">>> {user_intent}",
+            "",
+            "Your generated code MUST implement this intent.",
+            "",
             "=" * 60,
             "",
             "## YOUR TASK",
@@ -185,6 +197,7 @@ class ConstrainedGenerationPlan:
             "You MUST:",
             "- Generate ONLY the files listed below",
             "- Follow the instructions for EACH file exactly",
+            "- Implement the USER INTENT described above",
             "- Add TODO comments where information is missing",
             "",
             "You MUST NOT:",

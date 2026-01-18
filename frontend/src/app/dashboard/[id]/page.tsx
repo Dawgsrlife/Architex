@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ReactFlowProvider } from "@xyflow/react";
-import { ArrowLeft, Save, Download, Loader2, Github, Play, X, Check, FolderGit2, FileCode2, Settings2, ExternalLink, Globe, Eye, EyeOff, Share2, Link2, Copy, MessageSquare, Mic, MicOff, Send, Bot } from "lucide-react";
+import { ArrowLeft, Save, Download, Loader2, Github, Play, X, Check, FolderGit2, FileCode2, Settings2, ExternalLink, Globe, Eye, EyeOff, Share2, Link2, Copy, MessageSquare, Mic, MicOff, Send, Bot, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 import ComponentLibrary from "@/components/canvas/ComponentLibrary";
 import ArchitectureCanvas from "@/components/canvas/ArchitectureCanvas";
 import { useArchitectureStore } from "@/stores/architecture-store";
@@ -97,15 +97,57 @@ export default function ProjectEditorPage() {
   const [generatedLinks, setGeneratedLinks] = useState<{ github?: string; vercel?: string } | null>(null);
   const [rightPanel, setRightPanel] = useState<"chat" | null>(null);
 
-  const { nodes, edges, setProjectName: setStoreName, setProjectId, clearCanvas, undo, redo, canUndo, canRedo } = useArchitectureStore();
+  const { nodes, edges, prompt, githubRepoUrl, setProjectName: setStoreName, setProjectId, setPrompt, setGithubRepoUrl, clearCanvas, undo, redo, canUndo, canRedo } = useArchitectureStore();
+  
+  const [criticStatus, setCriticStatus] = useState<"idle" | "checking" | "pass" | "warning" | "error">("idle");
+  const [criticMessage, setCriticMessage] = useState<string | null>(null);
 
   useEffect(() => { if (!authLoading && !isAuthenticated) router.replace("/login"); }, [isAuthenticated, authLoading, router]);
 
+  // Load project data when projectId changes
+  const loadProject = useCallback(async (id: string) => {
+    try {
+      const { data } = await api.get<{
+        name: string;
+        description?: string;
+        github_repo_url?: string;
+        repository_url?: string;
+        current_nodes?: any[];
+        prompts_history?: { prompt: string }[];
+      }>(`/api/projects/${id}`);
+      
+      if (data) {
+        setProjectName(data.name || "Untitled");
+        setStoreName(data.name || "Untitled");
+        const repoUrl = data.github_repo_url || data.repository_url;
+        if (repoUrl) {
+          setGithubRepoUrl(repoUrl);
+          setSelectedRepo(repoUrl.split('/').pop() || '');
+        }
+        // Load last prompt if available
+        if (data.prompts_history && data.prompts_history.length > 0) {
+          setPrompt(data.prompts_history[data.prompts_history.length - 1].prompt);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load project:", err);
+    }
+  }, [setStoreName, setGithubRepoUrl, setPrompt]);
+
   useEffect(() => {
-    if (projectId === "new") { clearCanvas(); setProjectName("Untitled"); setStoreName("Untitled"); setProjectId(null); }
-    else { setProjectId(projectId); setProjectName(`Project ${projectId}`); setStoreName(`Project ${projectId}`); }
+    if (projectId === "new") { 
+      clearCanvas(); 
+      setProjectName("Untitled"); 
+      setStoreName("Untitled"); 
+      setProjectId(null);
+      setPrompt("");
+      setGithubRepoUrl(null);
+    } else { 
+      setProjectId(projectId); 
+      loadProject(projectId);
+    }
     setLoading(false);
-  }, [projectId, clearCanvas, setStoreName, setProjectId]);
+  }, [projectId, clearCanvas, setStoreName, setProjectId, setPrompt, setGithubRepoUrl, loadProject]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -126,12 +168,31 @@ export default function ProjectEditorPage() {
     a.click(); URL.revokeObjectURL(url); setToast("Exported");
   };
   const handleGenerate = async () => {
-    if (!selectedRepo) return;
-    setGenerating(true); setGeneratedLinks(null); setGenerationStep(1);
+    // Must have a prompt to generate
+    if (!prompt.trim()) {
+      alert("Please enter a description of what you want to build");
+      return;
+    }
+    
+    // Must have nodes
+    if (nodes.length === 0) {
+      alert("Please add at least one component to the canvas");
+      return;
+    }
+
+    setGenerating(true); 
+    setGeneratedLinks(null); 
+    setGenerationStep(1);
+
+    console.log("[GENERATE] Starting generation...");
+    console.log("[GENERATE] Prompt:", prompt);
+    console.log("[GENERATE] Nodes:", nodes.length);
+    console.log("[GENERATE] GitHub Repo:", githubRepoUrl);
 
     try {
       // INVARIANT: A job cannot be created unless a projectId exists
       const validProjectId = await ensureProjectExists(projectId === "new" ? null : projectId, projectName);
+      console.log("[GENERATE] Project ID:", validProjectId);
 
       // Update store if we got a new project
       if (projectId === "new") {
@@ -140,28 +201,47 @@ export default function ProjectEditorPage() {
 
       setGenerationStep(2); // Generating
 
-      // Construct architecture spec from canvas
-      const payload = {
+      // Construct architecture spec from canvas - THIS IS THE CRITICAL PAYLOAD
+      const architectureSpec = {
         name: projectName,
-        description: "Generated via Visual Editor",
-        nodes: nodes,
-        edges: edges,
-        metadata: { selectedRepo, deployToVercel },
-        components: nodes.map((n: any) => n.data?.label || n.type),
+        prompt: prompt,  // THE USER'S DESCRIPTION - Critical for LLM!
+        description: prompt,  // Also include as description for compat
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.data?.componentId || n.type,
+          data: n.data,
+          position: n.position,
+        })),
+        edges: edges.map(e => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
+        })),
+        metadata: { 
+          deployToVercel,
+          githubRepoUrl: githubRepoUrl,
+        },
+        components: nodes.map((n: any) => n.data?.label || n.data?.componentId || n.type),
         frameworks: nodes.map((n: any) => n.data?.framework).filter(Boolean)
       };
 
+      console.log("[GENERATE] Architecture Spec:", JSON.stringify(architectureSpec, null, 2));
+
       // Create job - this triggers backend generation
       const { data: jobData, error: jobError } = await api.post<{ job_id: string }>('/api/jobs', {
-        architecture_spec: payload,
+        architecture_spec: architectureSpec,
         project_id: validProjectId
       });
 
       if (jobError || !jobData) {
+        console.error("[GENERATE] Job creation failed:", jobError);
         throw new Error(jobError || 'Failed to start job');
       }
 
       const jobId = jobData.job_id;
+      console.log("[GENERATE] Job created:", jobId);
       setGenerationStep(3); // Creating files
 
       // Poll for job completion
@@ -172,9 +252,13 @@ export default function ProjectEditorPage() {
 
         const { data: status } = await api.get<{
           status: string;
-          result?: { github_repo_url?: string };
+          result?: { github_repo_url?: string; files_generated?: number };
           metadata?: { github_repo_url?: string };
+          current_step?: string;
+          error?: string;
         }>(`/api/jobs/${jobId}`);
+
+        console.log(`[GENERATE] Poll ${attempts + 1}: ${status?.status} - ${status?.current_step || 'no step'}`);
 
         if (status?.status === 'running') {
           // Update step based on progress (approximate)
@@ -183,17 +267,20 @@ export default function ProjectEditorPage() {
         }
 
         if (status?.status === 'completed' || status?.status === 'completed_with_warnings') {
-          const repoUrl = status.result?.github_repo_url || status.metadata?.github_repo_url;
+          console.log("[GENERATE] Job completed!", status);
+          const repoUrl = githubRepoUrl || status.result?.github_repo_url || status.metadata?.github_repo_url;
           setGeneratedLinks({
-            github: repoUrl || `https://github.com/user/${selectedRepo}`,
-            vercel: deployToVercel ? `https://${selectedRepo}.vercel.app` : undefined
+            github: repoUrl || undefined,
+            vercel: deployToVercel ? `https://${selectedRepo || projectName.toLowerCase().replace(/\s+/g, '-')}.vercel.app` : undefined
           });
           setGenerationStep(deployToVercel ? 6 : 5);
+          setToast(`Generated ${status.result?.files_generated || 'some'} files!`);
           break;
         }
 
         if (status?.status === 'failed') {
-          throw new Error('Job failed');
+          console.error("[GENERATE] Job failed:", status.error);
+          throw new Error(status.error || 'Job failed');
         }
 
         attempts++;
@@ -204,12 +291,15 @@ export default function ProjectEditorPage() {
       }
 
     } catch (error) {
-      console.error('Generation error:', error);
-      // Fallback to fake completion for demo
-      setGeneratedLinks({
-        github: `https://github.com/user/${selectedRepo}`,
-        vercel: deployToVercel ? `https://${selectedRepo}.vercel.app` : undefined
-      });
+      console.error('[GENERATE] Error:', error);
+      alert(`Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Show what we have anyway
+      if (githubRepoUrl) {
+        setGeneratedLinks({
+          github: githubRepoUrl,
+          vercel: undefined
+        });
+      }
     } finally {
       setGenerating(false);
     }
@@ -240,7 +330,42 @@ export default function ProjectEditorPage() {
 
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-60 flex-shrink-0 overflow-hidden border-r border-stone-200 bg-white"><ComponentLibrary /></aside>
-        <main className="flex-1 overflow-hidden relative bg-stone-100"><ReactFlowProvider><ArchitectureCanvas /></ReactFlowProvider></main>
+        <main className="flex-1 overflow-hidden relative bg-stone-100">
+          {/* Floating Prompt Panel - The System Intent */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-4">
+            <div className="bg-white/95 backdrop-blur-xl border border-stone-200 rounded-xl shadow-lg overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2 border-b border-stone-100 bg-stone-50/50">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-medium text-stone-600 uppercase tracking-wide">System Intent</span>
+                {prompt.trim() && (
+                  <span className="ml-auto flex items-center gap-1 text-xs text-emerald-600">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Ready
+                  </span>
+                )}
+              </div>
+              <div className="p-3">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe what you want to build... e.g., 'A real-time chat application with user authentication, message persistence, and WebSocket support'"
+                  className="w-full bg-transparent text-stone-900 text-sm placeholder-stone-400 resize-none focus:outline-none min-h-[60px]"
+                  rows={2}
+                />
+              </div>
+              {githubRepoUrl && (
+                <div className="px-4 py-2 border-t border-stone-100 bg-stone-50/50 flex items-center gap-2">
+                  <Github className="w-3.5 h-3.5 text-stone-400" />
+                  <a href={githubRepoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-stone-500 hover:text-stone-900 truncate">
+                    {githubRepoUrl.replace('https://github.com/', '')}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <ReactFlowProvider><ArchitectureCanvas /></ReactFlowProvider>
+        </main>
         {rightPanel === "chat" && <aside className="w-72 flex-shrink-0 border-l border-stone-200 bg-white"><ChatPanel onClose={() => setRightPanel(null)} /></aside>}
       </div>
 
@@ -251,16 +376,69 @@ export default function ProjectEditorPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => !generating && setGenerateModalOpen(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="p-5 border-b border-stone-100"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><Github className="w-5 h-5 text-stone-600" /><h2 className="text-lg font-medium text-stone-900">Deploy</h2></div>{!generating && <button onClick={() => { setGenerateModalOpen(false); setGenerationStep(0); setGeneratedLinks(null); }} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5 text-stone-400" /></button>}</div></div>
+            <div className="p-5 border-b border-stone-100"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><Sparkles className="w-5 h-5 text-amber-500" /><h2 className="text-lg font-medium text-stone-900">Generate Code</h2></div>{!generating && <button onClick={() => { setGenerateModalOpen(false); setGenerationStep(0); setGeneratedLinks(null); }} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5 text-stone-400" /></button>}</div></div>
             <div className="p-5">
               {!generating && !generatedLinks ? (
                 <>
-                  <div className="mb-5"><label className="block text-sm font-medium text-stone-700 mb-2">Repository</label><select value={selectedRepo} onChange={(e) => setSelectedRepo(e.target.value)} className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 text-sm focus:outline-none"><option value="">Select repository...</option><option value="my-app">my-app</option><option value="new-project">+ New repository</option></select></div>
+                  {/* Prompt Summary */}
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-900">System Intent</p>
+                        <p className="text-xs text-amber-700 mt-1 line-clamp-2">{prompt || "No description provided"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nodes Summary */}
+                  <div className="mb-4 p-3 bg-stone-50 border border-stone-200 rounded-lg">
+                    <p className="text-sm font-medium text-stone-700 mb-2">Architecture ({nodes.length} components)</p>
+                    <div className="flex flex-wrap gap-1">
+                      {nodes.slice(0, 6).map((n, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-white border border-stone-200 rounded text-xs text-stone-600">
+                          {n.data?.label || n.data?.componentId || 'Component'}
+                        </span>
+                      ))}
+                      {nodes.length > 6 && <span className="px-2 py-0.5 text-xs text-stone-400">+{nodes.length - 6} more</span>}
+                    </div>
+                  </div>
+
+                  {/* GitHub Repo */}
+                  {githubRepoUrl ? (
+                    <div className="mb-4 p-3 bg-stone-50 border border-stone-200 rounded-lg flex items-center gap-2">
+                      <Github className="w-4 h-4 text-stone-600" />
+                      <span className="text-sm text-stone-700 flex-1 truncate">{githubRepoUrl.replace('https://github.com/', '')}</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    </div>
+                  ) : (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm text-amber-700">No GitHub repo linked - will create on generate</span>
+                    </div>
+                  )}
+
+                  {/* Vercel Toggle */}
                   <label className="flex items-center justify-between p-3 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer mb-5">
-                    <div className="flex items-center gap-2"><div className="w-8 h-8 rounded bg-black flex items-center justify-center"><svg className="w-4 h-4 text-white" viewBox="0 0 76 76" fill="currentColor"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z" /></svg></div><span className="text-sm text-stone-900">Vercel</span></div>
+                    <div className="flex items-center gap-2"><div className="w-8 h-8 rounded bg-black flex items-center justify-center"><svg className="w-4 h-4 text-white" viewBox="0 0 76 76" fill="currentColor"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z" /></svg></div><span className="text-sm text-stone-900">Deploy to Vercel</span></div>
                     <button onClick={() => setDeployToVercel(!deployToVercel)} className={`relative w-10 h-5 rounded-full transition-colors ${deployToVercel ? "bg-stone-900" : "bg-stone-200"}`}><span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${deployToVercel ? "left-5" : "left-0.5"}`} /></button>
                   </label>
-                  <button onClick={handleGenerate} disabled={!selectedRepo} className="w-full py-2.5 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 disabled:opacity-50"><Play className="w-4 h-4 inline mr-2" />Deploy</button>
+
+                  {/* Generate Button */}
+                  <button 
+                    onClick={handleGenerate} 
+                    disabled={!prompt.trim() || nodes.length === 0}
+                    className="w-full py-2.5 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Play className="w-4 h-4" />
+                    Generate & Push to GitHub
+                  </button>
+
+                  {(!prompt.trim() || nodes.length === 0) && (
+                    <p className="text-xs text-center text-amber-600 mt-2">
+                      {!prompt.trim() ? "Add a system intent first" : "Add components to the canvas"}
+                    </p>
+                  )}
                 </>
               ) : generating ? (
                 <div className="space-y-2">{generationSteps.map((step, i) => { const isActive = generationStep === i + 1; const isComplete = generationStep > i + 1; return (<div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg ${isActive ? "bg-stone-100" : isComplete ? "bg-emerald-50" : "bg-stone-50"}`}><div className={`w-6 h-6 rounded-full flex items-center justify-center ${isComplete ? "bg-emerald-500" : isActive ? "bg-stone-900" : "bg-stone-200"}`}>{isComplete ? <Check className="w-3 h-3 text-white" /> : isActive ? <Loader2 className="w-3 h-3 text-white animate-spin" /> : <step.icon className="w-3 h-3 text-stone-400" />}</div><span className={`text-sm ${isComplete ? "text-emerald-700" : isActive ? "text-stone-900" : "text-stone-400"}`}>{step.label}</span></div>); })}</div>

@@ -227,11 +227,11 @@ export default function DashboardPage() {
               <Link href="/dashboard/new" className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-all active:scale-95">Create Project<ArrowRight className="w-4 h-4" /></Link>
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{filteredProjects.map((project, index) => <ProjectCard key={project.projectId} project={project} index={index} onDelete={handleDeleteProject} />)}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{filteredProjects.map((project, index) => <ProjectCard key={project.projectId || `project-${index}`} project={project} index={index} onDelete={handleDeleteProject} />)}</div>
           ) : (
             <div className="space-y-2">
-              {filteredProjects.map((project) => (
-                <Link key={project.projectId} href={`/dashboard/${project.projectId}`} className="block">
+              {filteredProjects.map((project, index) => (
+                <Link key={project.projectId || `project-${index}`} href={`/dashboard/${project.projectId}`} className="block">
                   <div className="flex items-center gap-4 p-4 bg-white border border-stone-200 rounded-xl hover:border-stone-300 hover:shadow-sm transition-all group">
                     <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0"><Layers className="w-5 h-5 text-stone-600" /></div>
                     <div className="flex-1 min-w-0"><h3 className="text-stone-900 font-medium truncate">{project.name}</h3><p className="text-stone-500 text-sm truncate">{project.description}</p></div>

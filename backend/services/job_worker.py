@@ -148,6 +148,25 @@ class JobWorker:
             # - Default          → Constrained mode (new default!)
             architecture_spec = job.get("architecture_spec", {})
             
+            # ─────────────────────────────────────────────────────────────
+            # CRITICAL: Extract user prompt (the meaning behind the nodes)
+            # ─────────────────────────────────────────────────────────────
+            user_prompt = architecture_spec.get("prompt", "").strip()
+            if not user_prompt:
+                # Fallback to description if prompt not provided
+                user_prompt = architecture_spec.get("description", "").strip()
+            if not user_prompt:
+                # Default prompt if nothing provided
+                user_prompt = "A standard software system"
+                await self._log(user_id, job_id, "⚠️ No prompt provided, using default")
+            else:
+                await self._log(user_id, job_id, f"📝 User Prompt: {user_prompt[:100]}{'...' if len(user_prompt) > 100 else ''}")
+            
+            # Ensure prompt is in architecture_spec for downstream functions
+            architecture_spec["prompt"] = user_prompt
+            
+            logger.info(f"[JOB {job_id}] User Prompt: {user_prompt}")
+            
             # Determine generation mode
             constrained_mode = os.getenv("CONSTRAINED", "true").lower() in ("true", "1", "yes")
             use_llm = os.getenv("USE_LLM", "").lower() in ("true", "1", "yes")
@@ -203,6 +222,7 @@ class JobWorker:
                 
                 # STEP 2: Build Constrained Generation Plan
                 await self._log(user_id, job_id, "📋 Building constrained generation plan...")
+                logger.info(f"[JOB {job_id}] Building plan with prompt: {user_prompt[:80]}...")
                 
                 plan = build_generation_plan(architecture_spec)
                 
@@ -399,7 +419,15 @@ class JobWorker:
                 warnings.append("Project not found - skipping push")
                 return
             
-            repo_url = project.get("github_repo_url")
+            repo_url = project.get("github_repo_url") or project.get("repository_url")
+            
+            # Log the repo URL being used
+            if repo_url:
+                logger.info(f"[JOB {job_id}] Using Repo URL: {repo_url}")
+                await self._log(user_id, job_id, f"🔗 Target Repo: {repo_url}")
+            else:
+                logger.warning(f"[JOB {job_id}] No GitHub repo URL found on project")
+                await self._log(user_id, job_id, "⚠️ No GitHub repo URL found on project")
             
             # Create repo if needed (ONCE per project)
             if not repo_url:
