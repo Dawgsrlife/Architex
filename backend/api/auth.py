@@ -73,12 +73,16 @@ async def exchange_github_code(code: str) -> tuple[str, dict]:
         user_id = str(github_user["id"])
         
         # Upsert user in database
+        logger.info(f"[AUTH] Storing user {user_id} with GitHub token (length: {len(access_token)})")
         await users_repo.upsert_user(
             userId=user_id,
             github_access_token=access_token,
             email=github_user.get("email"),
-            name=github_user.get("name") or github_user.get("login")
+            name=github_user.get("name") or github_user.get("login"),
+            username=github_user.get("login"),
+            avatar_url=github_user.get("avatar_url")
         )
+        logger.info(f"[AUTH] User {user_id} upserted successfully with GitHub token")
         
         # Create JWT token
         jwt_token = create_access_token(user_id)
@@ -180,8 +184,8 @@ async def get_current_user_info(authorization: str = Header(None)):
     # Return user info in the format frontend expects
     return {
         "id": user.get("userId"),
-        "username": user.get("name", "").split()[0] if user.get("name") else user.get("userId"),
+        "username": user.get("username") or user.get("name", "").split()[0] if user.get("name") else user.get("userId"),
         "name": user.get("name", ""),
         "email": user.get("email", ""),
-        "avatar_url": f"https://avatars.githubusercontent.com/u/{user.get('userId')}",
+        "avatar_url": user.get("avatar_url") or f"https://avatars.githubusercontent.com/u/{user.get('userId')}",
     }

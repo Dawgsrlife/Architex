@@ -150,6 +150,178 @@ COMPONENT_SEMANTICS: Dict[ComponentType, Dict[str, Any]] = {
 
 
 # ============================================================================
+# CODE GENERATION INSTRUCTIONS - Strict Node-to-Implementation Mapping
+# ============================================================================
+# These are EXPLICIT instructions appended to the system prompt based on nodes.
+# This is the "semantic glue" that bridges architecture → working code.
+
+CODE_INSTRUCTIONS: Dict[ComponentType, List[str]] = {
+    # --- Frontend ---
+    ComponentType.NEXTJS: [
+        "Use Next.js 14+ with App Router (not Pages Router)",
+        "Use TypeScript with strict mode enabled",
+        "Use Tailwind CSS for styling (already configured)",
+        "Create loading.tsx and error.tsx for each route",
+        "Use Server Components by default, 'use client' only when needed",
+        "Store API calls in src/lib/api.ts with typed responses",
+    ],
+    ComponentType.REACT: [
+        "Use React 18+ with Vite as the build tool",
+        "Use TypeScript with strict mode",
+        "Use Tailwind CSS for styling",
+        "Use React Router v6 for client-side routing",
+        "Store API calls in src/api/ with axios or fetch",
+    ],
+    ComponentType.VITE: [
+        "Configure Vite with TypeScript and React plugin",
+        "Enable HMR (Hot Module Replacement)",
+        "Add path aliases in vite.config.ts",
+    ],
+    
+    # --- Backend ---
+    ComponentType.FASTAPI: [
+        "Use FastAPI with async/await throughout",
+        "Use Pydantic v2 for request/response validation",
+        "Structure: main.py, routers/, schemas/, models/, services/",
+        "Add CORS middleware for frontend communication",
+        "Use dependency injection for database sessions",
+        "Include OpenAPI/Swagger docs at /docs",
+    ],
+    ComponentType.EXPRESS: [
+        "Use Express.js with TypeScript",
+        "Use Zod or Joi for request validation",
+        "Structure: app.ts, routes/, controllers/, middleware/",
+        "Add helmet for security headers",
+        "Add cors middleware for frontend communication",
+        "Use express-async-errors for error handling",
+    ],
+    ComponentType.FLASK: [
+        "Use Flask with Blueprints for modular routes",
+        "Use Marshmallow for serialization",
+        "Use Flask-RESTful or Flask-RESTX for APIs",
+    ],
+    
+    # --- Databases ---
+    ComponentType.POSTGRES: [
+        "Include SQLAlchemy 2.0+ with asyncpg for async Postgres access",
+        "Create Alembic migrations in migrations/ directory",
+        "Use declarative_base() for ORM models",
+        "Define get_db() dependency for session injection",
+        "Use UUID primary keys (uuid.uuid4)",
+        "Add indexes on frequently queried columns",
+    ],
+    ComponentType.SUPABASE: [
+        "Use @supabase/supabase-js client library",
+        "Initialize client with SUPABASE_URL and SUPABASE_ANON_KEY",
+        "Use Supabase Auth for user authentication",
+        "Use Row Level Security (RLS) policies for data access",
+        "Store files in Supabase Storage buckets",
+    ],
+    ComponentType.MONGODB: [
+        "Use Motor for async MongoDB access (Python) or Mongoose (Node.js)",
+        "Define schemas with Pydantic (Python) or Mongoose Schema (Node.js)",
+        "Use ObjectId for document IDs",
+        "Create indexes on frequently queried fields",
+        "Use aggregation pipelines for complex queries",
+    ],
+    ComponentType.SQLITE: [
+        "Use SQLite for development/testing only",
+        "Use SQLAlchemy with aiosqlite for async access",
+        "Store database file in data/ directory",
+    ],
+    
+    # --- Caching ---
+    ComponentType.REDIS: [
+        "Use redis-py with async support (aioredis) for Python",
+        "Use ioredis for Node.js applications",
+        "Implement connection pooling for performance",
+        "Use Redis for session storage and rate limiting",
+        "Set appropriate TTLs for cached data",
+        "Use Redis pub/sub for real-time features if needed",
+    ],
+    
+    # --- Authentication ---
+    ComponentType.AUTH: [
+        "Use JWT (JSON Web Tokens) for stateless auth",
+        "Use python-jose for JWT encoding/decoding (Python)",
+        "Use bcrypt or argon2 for password hashing",
+        "Store refresh tokens securely (httpOnly cookies or DB)",
+        "Implement /auth/login, /auth/register, /auth/refresh endpoints",
+        "Add auth middleware to protect routes",
+    ],
+    ComponentType.OAUTH: [
+        "Use authlib (Python) or passport.js (Node.js) for OAuth",
+        "Support Google and GitHub OAuth providers minimum",
+        "Store OAuth tokens encrypted in database",
+        "Implement callback routes: /auth/google/callback, /auth/github/callback",
+        "Link OAuth accounts to existing users by email",
+    ],
+    
+    # --- Payments ---
+    ComponentType.STRIPE: [
+        "Use stripe-python or @stripe/stripe-js libraries",
+        "Implement Stripe Checkout for one-time payments",
+        "Use Stripe Customer Portal for subscription management",
+        "Handle webhooks at /webhooks/stripe with signature verification",
+        "Store customer_id and subscription_id in user records",
+        "Use Stripe Price IDs from environment variables",
+    ],
+    
+    # --- Storage ---
+    ComponentType.S3: [
+        "Use boto3 (Python) or @aws-sdk/client-s3 (Node.js)",
+        "Generate presigned URLs for secure uploads/downloads",
+        "Set appropriate bucket policies and CORS configuration",
+        "Use multipart upload for large files",
+        "Store file metadata (key, bucket, size) in database",
+    ],
+    ComponentType.CLOUDINARY: [
+        "Use cloudinary SDK for image optimization",
+        "Generate transformation URLs for thumbnails",
+        "Implement upload presets for security",
+    ],
+    
+    # --- AI/ML ---
+    ComponentType.OPENAI: [
+        "Use openai Python package or openai npm package",
+        "Implement streaming responses for chat completions",
+        "Store conversation history for context",
+        "Handle rate limits with exponential backoff",
+        "Use environment variable OPENAI_API_KEY",
+    ],
+    ComponentType.ANTHROPIC: [
+        "Use anthropic Python package",
+        "Implement streaming for long responses",
+        "Handle rate limits appropriately",
+    ],
+    
+    # --- Queue/Workers ---
+    ComponentType.CELERY: [
+        "Use Celery with Redis as broker",
+        "Define tasks in tasks/ directory",
+        "Use task signatures for chaining",
+        "Implement retry with exponential backoff",
+    ],
+    ComponentType.RABBITMQ: [
+        "Use pika (Python) or amqplib (Node.js)",
+        "Implement publisher confirms for reliability",
+        "Use dead letter queues for failed messages",
+    ],
+    
+    # --- Fallback ---
+    ComponentType.SERVICE: [
+        "Create a clean service class with clear interface",
+        "Use dependency injection pattern",
+        "Add error handling and logging",
+    ],
+    ComponentType.COMPONENT: [
+        "Create modular, reusable component",
+        "Document inputs and outputs clearly",
+    ],
+}
+
+
+# ============================================================================
 # DATA STRUCTURES
 # ============================================================================
 
@@ -185,6 +357,7 @@ class TranslatedArchitecture:
     interactions: List[TranslatedInteraction]
     tech_stack: List[str]
     env_vars: List[str]
+    implementation_instructions: List[str] = field(default_factory=list)
     
     def to_instruction_dsl(self) -> str:
         """Convert to the strict instruction DSL for the LLM."""
@@ -196,10 +369,25 @@ class TranslatedArchitecture:
         lines.append("=" * 60)
         lines.append("")
         
-        # User request (the meaning)
-        lines.append("## USER REQUEST")
-        lines.append(self.user_prompt)
+        # User request (the meaning) - CRITICAL: This drives the generation
+        lines.append("## USER INTENT (MOST IMPORTANT)")
         lines.append("")
+        lines.append("The user wants to build:")
+        lines.append(f">>> {self.user_prompt}")
+        lines.append("")
+        lines.append("Your generated code MUST implement this intent.")
+        lines.append("")
+        
+        # =================================================================
+        # IMPLEMENTATION INSTRUCTIONS - The Semantic Glue
+        # =================================================================
+        if self.implementation_instructions:
+            lines.append("## IMPLEMENTATION INSTRUCTIONS (CRITICAL)")
+            lines.append("Follow these technology-specific requirements EXACTLY:")
+            lines.append("")
+            for instruction in self.implementation_instructions:
+                lines.append(f"• {instruction}")
+            lines.append("")
         
         # System architecture
         lines.append("## SYSTEM ARCHITECTURE")
@@ -427,8 +615,17 @@ class ArchitectureTranslator:
         """
         # Extract fields
         project_name = architecture_spec.get("name", "New Project")
-        user_prompt = architecture_spec.get("prompt", 
-                     architecture_spec.get("description", "Build an application"))
+        
+        # CRITICAL: Extract user prompt - this is the "meaning" behind the nodes
+        user_prompt = architecture_spec.get("prompt", "").strip()
+        if not user_prompt:
+            user_prompt = architecture_spec.get("description", "").strip()
+        if not user_prompt:
+            user_prompt = "A standard software system"
+            logger.warning(f"No prompt provided for {project_name}, using default")
+        
+        logger.info(f"[TRANSLATOR] User prompt: {user_prompt[:80]}...")
+        
         nodes = architecture_spec.get("nodes", [])
         edges = architecture_spec.get("edges", [])
         
@@ -459,6 +656,15 @@ class ArchitectureTranslator:
             all_env_vars.extend(comp.env_vars)
         env_vars = list(set(all_env_vars))
         
+        # =====================================================================
+        # BUILD IMPLEMENTATION INSTRUCTIONS (Semantic Glue)
+        # =====================================================================
+        # This is the critical piece that converts nodes → code-gen instructions.
+        # Each node type adds specific, actionable instructions for the LLM.
+        implementation_instructions = self._build_implementation_instructions(components)
+        
+        logger.info(f"Generated {len(implementation_instructions)} implementation instructions")
+        
         return TranslatedArchitecture(
             project_name=project_name,
             user_prompt=user_prompt,
@@ -466,7 +672,46 @@ class ArchitectureTranslator:
             interactions=interactions,
             tech_stack=tech_stack,
             env_vars=env_vars,
+            implementation_instructions=implementation_instructions,
         )
+    
+    def _build_implementation_instructions(
+        self, 
+        components: Dict[str, TranslatedComponent]
+    ) -> List[str]:
+        """
+        Build implementation-specific instructions based on detected nodes.
+        
+        This is the SEMANTIC GLUE that bridges:
+        - Visual architecture (nodes) → Working code (implementation)
+        
+        Each node type adds specific, actionable instructions that the LLM
+        MUST follow when generating code.
+        
+        Returns:
+            List of instruction strings to include in the prompt
+        """
+        instructions = []
+        seen_types = set()
+        
+        for comp in components.values():
+            comp_type = comp.component_type
+            
+            # Only add instructions once per component type
+            if comp_type in seen_types:
+                continue
+            seen_types.add(comp_type)
+            
+            # Get code instructions for this component type
+            type_instructions = CODE_INSTRUCTIONS.get(comp_type, [])
+            
+            if type_instructions:
+                # Add header for this component
+                instructions.append(f"[{comp_type.value.upper()}]")
+                instructions.extend(type_instructions)
+                instructions.append("")  # Blank line separator
+        
+        return instructions
 
 
 # ============================================================================
@@ -500,6 +745,62 @@ def translate_architecture(architecture_spec: Dict[str, Any]) -> str:
     translator = get_translator()
     translated = translator.translate(architecture_spec)
     return translated.to_instruction_dsl()
+
+
+def get_implementation_instructions(architecture_spec: Dict[str, Any]) -> List[str]:
+    """
+    Get just the implementation instructions for an architecture.
+    
+    This is the SEMANTIC GLUE function that converts nodes to code instructions.
+    
+    Example:
+        If architecture has a "postgres" node, returns:
+        - "Include SQLAlchemy 2.0+ with asyncpg for async Postgres access"
+        - "Create Alembic migrations in migrations/ directory"
+        - etc.
+    
+    Args:
+        architecture_spec: Raw spec from frontend
+        
+    Returns:
+        List of implementation instruction strings
+    """
+    translator = get_translator()
+    translated = translator.translate(architecture_spec)
+    return translated.implementation_instructions
+
+
+def build_combined_prompt(architecture_spec: Dict[str, Any]) -> str:
+    """
+    Build a combined prompt that merges user prompt with node-specific instructions.
+    
+    This is the key function for TASK 3 - Node-to-Prompt Translation.
+    
+    Args:
+        architecture_spec: Raw spec from frontend (must include 'prompt' and 'nodes')
+        
+    Returns:
+        Combined prompt string with user intent + implementation instructions
+    """
+    translator = get_translator()
+    translated = translator.translate(architecture_spec)
+    
+    lines = [
+        "## USER INTENT",
+        translated.user_prompt,
+        "",
+        "## TECHNOLOGY-SPECIFIC REQUIREMENTS",
+        "Based on your architecture, you MUST follow these implementation patterns:",
+        "",
+    ]
+    
+    for instruction in translated.implementation_instructions:
+        if instruction:  # Skip empty lines in list
+            lines.append(f"• {instruction}")
+        else:
+            lines.append("")
+    
+    return "\n".join(lines)
 
 
 # ============================================================================
@@ -543,6 +844,29 @@ if __name__ == "__main__":
     # Translate the golden demo spec
     instructions = get_golden_demo_instructions()
     print(instructions)
+    
+    print()
+    print("=" * 60)
+    print("IMPLEMENTATION INSTRUCTIONS (Semantic Glue)")
+    print("=" * 60)
+    print()
+    
+    # Show just the implementation instructions
+    impl_instructions = get_implementation_instructions(GOLDEN_DEMO_SPEC)
+    for inst in impl_instructions:
+        if inst:
+            print(f"  {inst}")
+        else:
+            print()
+    
+    print()
+    print("=" * 60)
+    print("COMBINED PROMPT (User Intent + Tech Instructions)")
+    print("=" * 60)
+    print()
+    
+    combined = build_combined_prompt(GOLDEN_DEMO_SPEC)
+    print(combined)
     
     print()
     print("=" * 60)

@@ -19,6 +19,9 @@ async def get_current_user(authorization: str = Header(None)) -> dict:
         async def protected_route(user: dict = Depends(get_current_user)):
             ...
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401, 
@@ -46,6 +49,10 @@ async def get_current_user(authorization: str = Header(None)) -> dict:
     user = await users_repo.get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Debug logging - check if GitHub token is present
+    has_token = "github_access_token" in user and user["github_access_token"] is not None
+    logger.debug(f"[AUTH_DEP] User {user_id} retrieved. Has GitHub token: {has_token}")
     
     return user
 

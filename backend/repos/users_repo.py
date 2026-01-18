@@ -15,11 +15,14 @@ async def upsert_user(
     userId: str,
     github_access_token: str,
     email: Optional[str] = None,
-    name: Optional[str] = None
+    name: Optional[str] = None,
+    username: Optional[str] = None,
+    avatar_url: Optional[str] = None
 ) -> dict:
     """
     Upsert user document
     userId: GitHub numeric ID as string
+    username: GitHub login (handle)
     Returns: user document dict
     """
     db = get_db()
@@ -37,6 +40,10 @@ async def upsert_user(
         user_doc["email"] = email
     if name:
         user_doc["name"] = name
+    if username:
+        user_doc["username"] = username
+    if avatar_url:
+        user_doc["avatar_url"] = avatar_url
     
     # Check if user exists
     existing = await collection.find_one({"userId": userId})

@@ -553,76 +553,214 @@ async def create_project(
     project: ProjectCreate,
     user: dict = Depends(get_current_user)
 ):
-    """Create a new project and optionally create a GitHub repo"""
+    """Create a new project and create a GitHub repo"""
+    import re
+    from datetime import timezone
+    
+    # =========================================================================
+    # AGGRESSIVE DEBUGGING - Print to terminal so we see EXACTLY where it fails
+    # =========================================================================
+    
+    print("\n" + "=" * 70)
+    print(f"🚀 STARTING PROJECT CREATION for '{project.name}'")
+    print("=" * 70)
+    
     db = MongoDB.get_database()
     project_id = str(uuid.uuid4())
     
-    # Get user's GitHub token
+    print(f"📋 Project ID: {project_id}")
+    print(f"📋 User ID: {user.get('_id')}")
+    print(f"📋 User keys: {list(user.keys())}")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 1: Check GitHub Token (REQUIRED - no silent failures!)
+    # ─────────────────────────────────────────────────────────────────────────
+    print("\n🔍 Checking user token...")
+    
     github_token = user.get("github_access_token")
+    
+    if not github_token:
+        print("❌ ERROR: No GitHub token found for user!")
+        print(f"   User document has these keys: {list(user.keys())}")
+        raise HTTPException(
+            status_code=400,
+            detail="No GitHub token found. Please re-login via GitHub OAuth at /login."
+        )
+    
+    print(f"✅ Token found (length: {len(github_token)})")
+    print(f"   Token preview: {github_token[:8]}...{github_token[-4:]}")
+    
+    username = user.get("username")
+    print(f"📋 GitHub username: {username}")
+    
+    if not username:
+        print("❌ ERROR: No GitHub username found!")
+        raise HTTPException(
+            status_code=400,
+            detail="No GitHub username found. Please re-login via GitHub OAuth."
+        )
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 2: Sanitize repo name
+    # ─────────────────────────────────────────────────────────────────────────
+    # Convert to valid GitHub repo name
+    repo_name = project.name.lower().strip()
+    repo_name = re.sub(r'\s+', '-', repo_name)
+    repo_name = re.sub(r'[^a-z0-9\-_]', '', repo_name)
+    repo_name = re.sub(r'-+', '-', repo_name).strip('-')
+    if not repo_name:
+        repo_name = 'project'
+    
+    print(f"\n📝 Repo name: '{project.name}' → '{repo_name}'")
+    
     repository_url = None
     
-    if github_token:
-        # Create GitHub repo for this project
-        async with httpx.AsyncClient() as client:
-            # First check if repo already exists
-            repo_name = project.name.replace(" ", "-").lower()
-            username = user.get("username")
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 3: Create GitHub Repository (with httpx)
+    # ─────────────────────────────────────────────────────────────────────────
+    print(f"\n🌐 Calling GitHub API to create repo '{repo_name}'...")
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # First check if repo already exists
+        print(f"   Checking if repo exists: {username}/{repo_name}")
+        
+        check_response = await client.get(
+            f"https://api.github.com/repos/{username}/{repo_name}",
+            headers={"Authorization": f"Bearer {github_token}"},
+        )
+        
+        print(f"   Check response status: {check_response.status_code}")
+        
+        if check_response.status_code == 200:
+            # Repo exists, use it
+            repo_data = check_response.json()
+            repository_url = repo_data["html_url"]
+            print(f"✅ Repo already exists: {repository_url}")
+        else:
+            # Create new repo
+            print(f"   Repo doesn't exist, creating...")
             
-            check_response = await client.get(
-                f"https://api.github.com/repos/{username}/{repo_name}",
-                headers={"Authorization": f"Bearer {github_token}"},
+            create_response = await client.post(
+                "https://api.github.com/user/repos",
+                headers={
+                    "Authorization": f"Bearer {github_token}",
+                    "Accept": "application/vnd.github.v3+json",
+                },
+                json={
+                    "name": repo_name,
+                    "description": project.description or f"Created by Architex: {project.name}",
+                    "private": False,
+                    "auto_init": True,
+                },
             )
             
-            if check_response.status_code == 200:
-                # Repo exists, use it
-                repo_data = check_response.json()
+            print(f"   Create response status: {create_response.status_code}")
+            
+            if create_response.status_code == 201:
+                repo_data = create_response.json()
                 repository_url = repo_data["html_url"]
-                logger.info(f"Using existing repo: {repository_url}")
-            else:
-                # Create new repo
-                create_response = await client.post(
+                print(f"✅ GitHub Repo Created: {repository_url}")
+            elif create_response.status_code == 422:
+                # Name conflict - try with suffix
+                error_data = create_response.json()
+                print(f"⚠️  Name conflict: {error_data}")
+                
+                suffix = str(uuid.uuid4())[:6]
+                new_repo_name = f"{repo_name}-{suffix}"
+                print(f"   Retrying with: {new_repo_name}")
+                
+                retry_response = await client.post(
                     "https://api.github.com/user/repos",
                     headers={
                         "Authorization": f"Bearer {github_token}",
                         "Accept": "application/vnd.github.v3+json",
                     },
                     json={
-                        "name": repo_name,
+                        "name": new_repo_name,
                         "description": project.description or f"Created by Architex: {project.name}",
                         "private": False,
-                        "auto_init": True,  # Initialize with README
+                        "auto_init": True,
                     },
                 )
                 
-                if create_response.status_code == 201:
-                    repo_data = create_response.json()
+                if retry_response.status_code == 201:
+                    repo_data = retry_response.json()
                     repository_url = repo_data["html_url"]
-                    logger.info(f"Created new GitHub repo: {repository_url}")
+                    print(f"✅ GitHub Repo Created (with suffix): {repository_url}")
                 else:
-                    error_data = create_response.json()
-                    logger.error(f"Failed to create GitHub repo: {error_data}")
-                    # Continue without repo - don't fail the project creation
+                    error_data = retry_response.json()
+                    print(f"❌ GITHUB API FAILED (retry)!")
+                    print(f"   Status: {retry_response.status_code}")
+                    print(f"   Response: {error_data}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"GitHub API error: {error_data.get('message', 'Unknown error')}"
+                    )
+            else:
+                error_data = create_response.json()
+                print(f"❌ GITHUB API FAILED!")
+                print(f"   Status: {create_response.status_code}")
+                print(f"   Response: {error_data}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"GitHub API error ({create_response.status_code}): {error_data.get('message', 'Unknown error')}"
+                )
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 4: Save to Database
+    # ─────────────────────────────────────────────────────────────────────────
+    print(f"\n💾 Storing project in database...")
+    
+    # Get user_id - try multiple possible field names
+    user_id = user.get("_id") or user.get("userId") or user.get("user_id")
+    print(f"   User ID for DB: {user_id}")
+    print(f"   Project ID for DB: {project_id}")
     
     project_doc = {
         "_id": project_id,
-        "user_id": user["_id"],
-        "name": project.name,
+        "projectId": project_id,          # Required by index
+        "userId": str(user_id),           # Required by index (camelCase!)
+        "user_id": str(user_id),          # Also include snake_case for compat
+        "project_name": project.name,     # Match schema used elsewhere
+        "name": project.name,             # Also include for compat
         "description": project.description or "",
         "repository_url": repository_url,
+        "github_repo_url": repository_url,  # Also include for compat
         "status": "draft",
         "nodes_count": 0,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "current_nodes": [],
+        "prompts_history": [],
+        "latest_successful_job_id": None,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        "createdAt": datetime.now(timezone.utc),
+        "updatedAt": datetime.now(timezone.utc),
+        "last_updated": datetime.now(timezone.utc),
     }
     
+    print(f"   Document keys: {list(project_doc.keys())}")
+    
     await db.projects.insert_one(project_doc)
-    logger.info(f"Created project {project_id} for user {user['_id']}")
+    print(f"✅ Project saved to database")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # SUCCESS!
+    # ─────────────────────────────────────────────────────────────────────────
+    print("\n" + "=" * 70)
+    print(f"🎉 SUCCESS! Project '{project.name}' created")
+    print(f"   Project ID: {project_id}")
+    print(f"   GitHub URL: {repository_url}")
+    print("=" * 70 + "\n")
+    
+    logger.info(f"Created project {project_id} with repo {repository_url}")
     
     return {
         "id": project_id,
+        "projectId": project_id,  # Include both for frontend compat
         "name": project.name,
         "description": project.description or "",
         "repository_url": repository_url,
+        "github_repo_url": repository_url,  # Include both for frontend compat
         "status": "draft",
     }
 

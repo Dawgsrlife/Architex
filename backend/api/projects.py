@@ -108,62 +108,156 @@ async def create_project(
     4. Create GitHub repo if it doesn't exist
     5. Store project with repo URL in database
     """
+    from github import GithubException
+    import traceback
+    import uuid
+    
+    # =========================================================================
+    # AGGRESSIVE DEBUGGING - Print to terminal so we see EXACTLY where it fails
+    # =========================================================================
+    
+    print("\n" + "=" * 70)
+    print(f"🚀 STARTING PROJECT CREATION for '{project.name}'")
+    print("=" * 70)
+    
     user_id = get_user_id(user)
+    print(f"📋 User ID: {user_id}")
+    print(f"📋 User dict keys: {list(user.keys())}")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 1: Check user token
+    # ─────────────────────────────────────────────────────────────────────────
+    print("\n🔍 Checking user token...")
+    
     github_token = user.get("github_access_token")
     
     if not github_token:
+        print("❌ ERROR: No GitHub token found for user!")
+        print(f"   User document has these keys: {list(user.keys())}")
+        logger.error(f"[CREATE_PROJECT] No GitHub token for user {user_id}")
         raise HTTPException(
             status_code=400, 
-            detail="GitHub access token not found. Please re-authenticate."
+            detail="No GitHub Token found for user. Please re-login via GitHub OAuth at /login."
         )
     
-    # Initialize GitHub service
-    github_service = GitHubService(access_token=github_token)
+    print(f"✅ Token found (length: {len(github_token)})")
+    print(f"   Token preview: {github_token[:8]}...{github_token[-4:]}")
     
-    # Convert project name to valid GitHub repo name
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 2: Initialize GitHub Service
+    # ─────────────────────────────────────────────────────────────────────────
+    print("\n🔧 Initializing GitHubService...")
+    
+    try:
+        github_service = GitHubService(access_token=github_token)
+        print("✅ GitHubService initialized")
+    except Exception as e:
+        print(f"❌ Failed to initialize GitHubService: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to initialize GitHub: {e}")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 3: Slugify repo name
+    # ─────────────────────────────────────────────────────────────────────────
     repo_name = slugify_repo_name(project.name)
     description = project.description or f"Project created via Architex"
+    print(f"\n📝 Repo name: '{project.name}' → '{repo_name}'")
     
-    # Check if repo already exists
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 4: Check if repo exists
+    # ─────────────────────────────────────────────────────────────────────────
+    print(f"\n🔍 Checking if repo '{repo_name}' already exists...")
+    
     try:
-        if github_service.repo_exists(repo_name):
-            # Append a suffix to make the name unique
-            import uuid
+        repo_exists = github_service.repo_exists(repo_name)
+        print(f"   Repo exists check returned: {repo_exists}")
+        
+        if repo_exists:
             suffix = str(uuid.uuid4())[:6]
             repo_name = f"{repo_name}-{suffix}"
-            logger.info(f"Repo name conflict, using: {repo_name}")
-    except Exception as e:
-        logger.error(f"Error checking if repo exists: {e}")
+            print(f"⚠️  Repo exists! Using unique name: '{repo_name}'")
+        else:
+            print(f"✅ Repo name '{repo_name}' is available")
+            
+    except GithubException as e:
+        print(f"❌ GITHUB API ERROR checking repo: Status {e.status}")
+        print(f"   Message: {e.data}")
+        logger.error(f"[CREATE_PROJECT] GitHub API error: {e.status} - {e.data}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to check GitHub repository: {str(e)}"
+            detail=f"GitHub API error ({e.status}): {e.data.get('message', str(e))}"
         )
+    except Exception as e:
+        print(f"❌ UNEXPECTED ERROR checking repo: {type(e).__name__}: {e}")
+        print(f"   Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error checking repo: {e}")
     
-    # Create GitHub repository
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 5: Create GitHub repository
+    # ─────────────────────────────────────────────────────────────────────────
+    print(f"\n🌐 Calling GitHub API to create repo '{repo_name}'...")
+    
     try:
         result = await github_service.create_repository(
             name=repo_name,
             description=description,
-            private=False  # Public by default for hackathon/demo
+            private=False
         )
         github_repo_url = result["repository"]["url"]
-        logger.info(f"Created GitHub repo: {github_repo_url}")
-    except Exception as e:
-        logger.error(f"Failed to create GitHub repo: {e}")
+        print(f"✅ GitHub Repo Created: {github_repo_url}")
+        
+    except GithubException as e:
+        print(f"\n❌ GITHUB API FAILED!")
+        print(f"   Status Code: {e.status}")
+        print(f"   Error Data: {e.data}")
+        print(f"   Message: {e.data.get('message', 'No message')}")
+        if 'errors' in e.data:
+            print(f"   Errors: {e.data['errors']}")
+        logger.error(f"[CREATE_PROJECT] GitHub create repo failed: {e.status} - {e.data}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to create GitHub repository: {str(e)}"
+            detail=f"GitHub API error ({e.status}): {e.data.get('message', str(e))}"
+        )
+    except Exception as e:
+        print(f"\n❌ UNEXPECTED ERROR creating repo!")
+        print(f"   Exception Type: {type(e).__name__}")
+        print(f"   Exception: {e}")
+        print(f"   Traceback:\n{traceback.format_exc()}")
+        logger.error(f"[CREATE_PROJECT] Unexpected error: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create GitHub repository: {type(e).__name__}: {str(e)}"
         )
     
-    # Create project in database with GitHub URL
-    project_doc = await projects_repo.create_project(
-        userId=user_id,
-        project_name=project.name,
-        description=project.description,
-        repository_url=github_repo_url
-    )
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 6: Store project in database
+    # ─────────────────────────────────────────────────────────────────────────
+    print(f"\n💾 Storing project in database...")
     
-    logger.info(f"Created project {project_doc['projectId']} with repo {github_repo_url}")
+    try:
+        project_doc = await projects_repo.create_project(
+            userId=user_id,
+            project_name=project.name,
+            description=project.description,
+            repository_url=github_repo_url
+        )
+        print(f"✅ Project stored! ID: {project_doc['projectId']}")
+        
+    except Exception as e:
+        print(f"❌ DATABASE ERROR: {type(e).__name__}: {e}")
+        print(f"   Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # SUCCESS!
+    # ─────────────────────────────────────────────────────────────────────────
+    print("\n" + "=" * 70)
+    print(f"🎉 SUCCESS! Project '{project.name}' created")
+    print(f"   Project ID: {project_doc['projectId']}")
+    print(f"   GitHub URL: {github_repo_url}")
+    print("=" * 70 + "\n")
+    
+    logger.info(f"[CREATE_PROJECT] Success: {project_doc['projectId']} → {github_repo_url}")
+    
     return serialize_project(project_doc)
 
 

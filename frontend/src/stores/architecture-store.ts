@@ -32,6 +32,8 @@ export interface ArchitectureStore {
   edges: Edge[];
   projectName: string;
   projectId: string | null;
+  prompt: string;  // User's description of what to build
+  githubRepoUrl: string | null;  // Project's GitHub repo URL
 
   history: HistoryState[];
   historyIndex: number;
@@ -46,6 +48,8 @@ export interface ArchitectureStore {
   setEdges: (edges: Edge[]) => void;
   setProjectName: (name: string) => void;
   setProjectId: (id: string | null) => void;
+  setPrompt: (prompt: string) => void;
+  setGithubRepoUrl: (url: string | null) => void;
   clearCanvas: () => void;
 
   undo: () => void;
@@ -65,6 +69,8 @@ export const useArchitectureStore = create<ArchitectureStore>()(
       edges: [],
       projectName: "Untitled Project",
       projectId: null,
+      prompt: "",
+      githubRepoUrl: null,
       history: [],
       historyIndex: -1,
       isHistoryInitialized: false,
@@ -201,12 +207,22 @@ export const useArchitectureStore = create<ArchitectureStore>()(
         set({ projectId: id });
       },
 
+      setPrompt: (prompt: string) => {
+        set({ prompt });
+      },
+
+      setGithubRepoUrl: (url: string | null) => {
+        set({ githubRepoUrl: url });
+      },
+
       clearCanvas: () => {
         set({
           nodes: [],
           edges: [],
           projectName: "Untitled Project",
           projectId: null,
+          prompt: "",
+          githubRepoUrl: null,
           history: [{ nodes: [], edges: [] }],
           historyIndex: 0,
           isHistoryInitialized: true,
@@ -220,6 +236,8 @@ export const useArchitectureStore = create<ArchitectureStore>()(
         edges: state.edges,
         projectName: state.projectName,
         projectId: state.projectId,
+        prompt: state.prompt,
+        githubRepoUrl: state.githubRepoUrl,
       }),
     }
   )
