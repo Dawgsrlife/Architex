@@ -21,7 +21,8 @@ export default function LoginPage() {
   }, []);
 
   const handleLogin = () => {
-    window.location.href = "http://localhost:8000/api/auth/github";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    window.location.href = `${apiUrl}/api/auth/github`;
   };
 
   return (

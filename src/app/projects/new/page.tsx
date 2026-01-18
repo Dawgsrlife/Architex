@@ -26,17 +26,8 @@ export default function NewProjectPage() {
       router.replace("/workflow");
     }, [isAuthenticated, isLoading, clearCanvas, router]);
 
-  if (isLoading || !isInitialized) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-stone-950">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-white animate-spin mx-auto mb-4" />
-          <p className="text-stone-400 text-sm">
-            {isLoading ? "Checking authentication..." : "Creating new project..."}
-          </p>
-        </div>
-      </div>
-    );
+  if (isLoading || !isAuthenticated || !isInitialized) {
+    return null;
   }
 
   return (
