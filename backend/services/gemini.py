@@ -17,7 +17,8 @@ class GeminiService:
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
         if api_key:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            # Use gemini-2.0-flash for fast, cost-effective generation
+            self.model = genai.GenerativeModel('gemini-2.0-flash')
         else:
             logger.warning("GOOGLE_GEMINI_API_KEY not set")
             self.model = None
