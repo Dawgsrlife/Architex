@@ -1,0 +1,87 @@
+{
+  "name": "AdminDashboard",
+  "description": "Internal admin dashboard for managing users, access logs, and system settings with role-based authentication",
+  "nodes": [
+    {
+      "id": "frontend-nextjs",
+      "type": "custom",
+      "position": { "x": 100, "y": 200 },
+      "data": {
+        "label": "Next.js Frontend",
+        "componentId": "nextjs",
+        "category": "frontend",
+        "icon": "Monitor",
+        "color": "#3b82f6"
+      }
+    },
+    {
+      "id": "backend-fastapi",
+      "type": "custom",
+      "position": { "x": 400, "y": 200 },
+      "data": {
+        "label": "FastAPI Backend",
+        "componentId": "fastapi",
+        "category": "backend",
+        "icon": "Server",
+        "color": "#10b981"
+      }
+    },
+    {
+      "id": "database-postgres",
+      "type": "custom",
+      "position": { "x": 700, "y": 200 },
+      "data": {
+        "label": "PostgreSQL Database",
+        "componentId": "postgres",
+        "category": "database",
+        "icon": "Database",
+        "color": "#8b5cf6"
+      }
+    },
+    {
+      "id": "auth-service",
+      "type": "custom",
+      "position": { "x": 400, "y": 50 },
+      "data": {
+        "label": "Auth Service",
+        "componentId": "auth",
+        "category": "auth",
+        "icon": "Shield",
+        "color": "#ef4444"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-frontend-backend",
+      "source": "frontend-nextjs",
+      "target": "backend-fastapi",
+      "animated": true
+    },
+    {
+      "id": "e-backend-database",
+      "source": "backend-fastapi",
+      "target": "database-postgres",
+      "animated": true
+    },
+    {
+      "id": "e-backend-auth",
+      "source": "backend-fastapi",
+      "target": "auth-service",
+      "animated": true
+    },
+    {
+      "id": "e-frontend-auth",
+      "source": "frontend-nextjs",
+      "target": "auth-service",
+      "animated": true
+    }
+  ],
+  "metadata": {
+    "intent": "Internal admin dashboard for managing users, access logs, and system settings with role-based authentication",
+    "created_for": "demo",
+    "expected_entities": ["User", "AccessLog", "Setting"],
+    "expected_pages": ["Dashboard", "Users", "Access Logs", "Settings"],
+    "expected_file_count": 30
+  }
+}

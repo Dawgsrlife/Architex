@@ -27,11 +27,32 @@ interface HistoryState {
   edges: Edge[];
 }
 
+// Critic result from backend
+export interface CriticIssue {
+  severity: "error" | "warning" | "info";
+  code: string;
+  message: string;
+  suggestion?: string;
+  node_id?: string;
+}
+
+export interface CriticResult {
+  passed: boolean;
+  blocking: boolean;
+  issues: CriticIssue[];
+  summary: string;
+}
+
 export interface ArchitectureStore {
   nodes: ArchitectureNode[];
   edges: Edge[];
   projectName: string;
   projectId: string | null;
+  prompt: string; // User's intent/description for what they want to build
+  
+  // Critic state
+  criticResult: CriticResult | null;
+  isCriticLoading: boolean;
   
   history: HistoryState[];
   historyIndex: number;
@@ -46,6 +67,10 @@ export interface ArchitectureStore {
   setEdges: (edges: Edge[]) => void;
   setProjectName: (name: string) => void;
   setProjectId: (id: string | null) => void;
+  setPrompt: (prompt: string) => void;
+  setCriticResult: (result: CriticResult | null) => void;
+  setIsCriticLoading: (loading: boolean) => void;
+  runCritic: () => Promise<void>;
   clearCanvas: () => void;
   
   undo: () => void;
@@ -65,9 +90,92 @@ export const useArchitectureStore = create<ArchitectureStore>()(
       edges: [],
       projectName: "Untitled Project",
       projectId: null,
+      prompt: "",
+      criticResult: null,
+      isCriticLoading: false,
       history: [],
       historyIndex: -1,
       isHistoryInitialized: false,
+
+      setPrompt: (prompt: string) => {
+        set({ prompt, criticResult: null }); // Clear critic when prompt changes
+      },
+
+      setCriticResult: (result: CriticResult | null) => {
+        set({ criticResult: result });
+      },
+
+      setIsCriticLoading: (loading: boolean) => {
+        set({ isCriticLoading: loading });
+      },
+
+      runCritic: async () => {
+        const { nodes, edges, prompt } = get();
+        
+        // Don't run if no nodes
+        if (nodes.length === 0) {
+          set({ 
+            criticResult: { 
+              passed: false, 
+              blocking: true, 
+              issues: [{ severity: "error", code: "NO_NODES", message: "Add components to your architecture", suggestion: "Drag components from the library onto the canvas" }],
+              summary: "Empty architecture"
+            }
+          });
+          return;
+        }
+
+        set({ isCriticLoading: true });
+
+        try {
+          // Build architecture spec from canvas state
+          const architectureSpec = {
+            name: get().projectName,
+            description: prompt || "No description provided",
+            nodes: nodes.map(n => ({
+              id: n.id,
+              type: n.type,
+              data: n.data
+            })),
+            edges: edges.map(e => ({
+              id: e.id,
+              source: e.source,
+              target: e.target
+            })),
+            metadata: {
+              intent: prompt
+            }
+          };
+
+          const response = await fetch("http://localhost:8000/api/architecture/critique/quick", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              architecture_spec: architectureSpec,
+              intent: prompt 
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to run critic");
+          }
+
+          const result = await response.json();
+          set({ criticResult: result });
+        } catch (error) {
+          console.error("Critic error:", error);
+          set({ 
+            criticResult: {
+              passed: false,
+              blocking: false,
+              issues: [{ severity: "warning", code: "CRITIC_ERROR", message: "Could not validate architecture", suggestion: "Backend may be offline" }],
+              summary: "Validation unavailable"
+            }
+          });
+        } finally {
+          set({ isCriticLoading: false });
+        }
+      },
 
       initHistory: () => {
         const { nodes, edges, isHistoryInitialized } = get();
@@ -214,6 +322,9 @@ export const useArchitectureStore = create<ArchitectureStore>()(
           edges: [],
           projectName: "Untitled Project",
           projectId: null,
+          prompt: "",
+          criticResult: null,
+          isCriticLoading: false,
           history: [{ nodes: [], edges: [] }],
           historyIndex: 0,
           isHistoryInitialized: true,
@@ -227,6 +338,7 @@ export const useArchitectureStore = create<ArchitectureStore>()(
         edges: state.edges,
         projectName: state.projectName,
         projectId: state.projectId,
+        prompt: state.prompt,
       }),
     }
   )

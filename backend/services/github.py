@@ -5,10 +5,32 @@ Handles GitHub operations
 
 import os
 import logging
+import re
 from typing import Dict, Any, Optional, List
 from github import Github, GithubException
 
 logger = logging.getLogger(__name__)
+
+
+def slugify_repo_name(name: str) -> str:
+    """
+    Convert a project name to a valid GitHub repository name.
+    GitHub repo names can only contain alphanumeric characters, hyphens, and underscores.
+    """
+    # Convert to lowercase and replace spaces with hyphens
+    slug = name.lower().strip()
+    slug = re.sub(r'\s+', '-', slug)
+    # Remove invalid characters (keep alphanumeric, hyphens, underscores)
+    slug = re.sub(r'[^a-z0-9\-_]', '', slug)
+    # Remove consecutive hyphens
+    slug = re.sub(r'-+', '-', slug)
+    # Remove leading/trailing hyphens
+    slug = slug.strip('-')
+    # Ensure it's not empty
+    if not slug:
+        slug = 'project'
+    return slug
+
 
 class GitHubService:
     """Service for GitHub API integration"""
@@ -19,6 +41,27 @@ class GitHubService:
             self.client = Github(access_token)
         else:
             self.client = None
+    
+    def get_username(self) -> str:
+        """Get the authenticated user's GitHub username"""
+        if not self.client:
+            raise ValueError("GitHub client not initialized")
+        return self.client.get_user().login
+    
+    def repo_exists(self, repo_name: str) -> bool:
+        """Check if a repository with the given name exists for the authenticated user"""
+        if not self.client:
+            raise ValueError("GitHub client not initialized")
+        
+        try:
+            user = self.client.get_user()
+            user.get_repo(repo_name)
+            return True
+        except GithubException as e:
+            if e.status == 404:
+                return False
+            # Re-raise other errors
+            raise
     
     async def create_repository(
         self, 

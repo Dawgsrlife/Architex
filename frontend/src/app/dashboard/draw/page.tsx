@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Tldraw, exportToBlob, Editor } from "tldraw";
+import { Tldraw, Editor } from "tldraw";
 import "tldraw/tldraw.css";
 import { 
   ArrowLeft, 

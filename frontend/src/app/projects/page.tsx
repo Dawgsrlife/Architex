@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
@@ -20,26 +20,15 @@ import {
   ChevronDown,
   Layers,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Github,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  updatedAt: string;
-  nodesCount: number;
-  status: "draft" | "active" | "archived";
-}
-
-const mockProjects: Project[] = [
-  { id: "1", name: "E-commerce Platform", description: "Full-stack e-commerce with Next.js, Stripe, and PostgreSQL", updatedAt: "2 hours ago", nodesCount: 12, status: "active" },
-  { id: "2", name: "Auth Microservice", description: "JWT authentication service with Redis caching", updatedAt: "1 day ago", nodesCount: 8, status: "active" },
-  { id: "3", name: "Data Pipeline", description: "Real-time ETL with Kafka and Elasticsearch", updatedAt: "3 days ago", nodesCount: 15, status: "draft" },
-  { id: "4", name: "Mobile Backend", description: "REST API for iOS and Android apps", updatedAt: "1 week ago", nodesCount: 6, status: "archived" },
-  { id: "5", name: "Analytics Dashboard", description: "Real-time metrics with WebSockets", updatedAt: "2 weeks ago", nodesCount: 9, status: "draft" },
-];
+import { api } from "@/lib/api";
+import { formatDate, getRepoShortName } from "@/lib/utils";
+import { Project, STATUS_CONFIG } from "@/types/project";
 
 function ProjectsNav() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -125,9 +114,10 @@ function ProjectsNav() {
   );
 }
 
-function ProjectCard({ project, index }: { project: Project; index: number }) {
+function ProjectCard({ project, index, onDelete }: { project: Project; index: number; onDelete: (id: string) => void }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     gsap.fromTo(cardRef.current,
@@ -136,17 +126,19 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
     );
   }, [index]);
 
-  const statusConfig = {
-    active: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
-    draft: { bg: "bg-amber-500/10", text: "text-amber-400", dot: "bg-amber-400" },
-    archived: { bg: "bg-stone-500/10", text: "text-stone-500", dot: "bg-stone-500" },
-  };
+  const status = STATUS_CONFIG[project.status] || STATUS_CONFIG.draft;
 
-  const status = statusConfig[project.status];
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${project.name}"?`)) return;
+    setDeleting(true);
+    await onDelete(project.projectId);
+    setDeleting(false);
+    setMenuOpen(false);
+  };
 
   return (
     <div ref={cardRef} className="group relative">
-      <Link href={`/projects/${project.id}`} className="cursor-pointer">
+      <Link href={`/projects/${project.projectId}`} className="cursor-pointer">
         <div className="relative bg-stone-900/40 border border-stone-800/40 rounded-2xl p-6 hover:border-stone-700/60 hover:bg-stone-900/60 transition-all duration-300">
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           
@@ -166,18 +158,31 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             <h3 className="text-white font-medium text-lg mb-2 group-hover:text-stone-100 transition-colors">
               {project.name}
             </h3>
-            <p className="text-stone-500 text-sm line-clamp-2 mb-5 leading-relaxed">
-              {project.description}
+            <p className="text-stone-500 text-sm line-clamp-2 mb-3 leading-relaxed">
+              {project.description || "No description"}
             </p>
+            
+            {project.github_repo_url && (
+              <a 
+                href={project.github_repo_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-white mb-3 transition-colors"
+              >
+                <Github className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[150px]">{getRepoShortName(project.github_repo_url)}</span>
+              </a>
+            )}
             
             <div className="flex items-center justify-between text-xs text-stone-500">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
-                {project.updatedAt}
+                {formatDate(project.last_updated)}
               </div>
               <div className="flex items-center gap-1.5">
                 <Grid3X3 className="w-3.5 h-3.5" />
-                {project.nodesCount} nodes
+                {project.nodes_count} nodes
               </div>
             </div>
           </div>
@@ -200,17 +205,23 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
             <div className="absolute right-0 top-full mt-1 w-44 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl z-50 overflow-hidden">
-              <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-300 hover:bg-stone-800 transition-colors cursor-pointer">
+              <Link href={`/projects/${project.projectId}`} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-300 hover:bg-stone-800 transition-colors cursor-pointer">
                 <ExternalLink className="w-4 h-4" />
                 Open
-              </button>
+              </Link>
+              {project.github_repo_url && (
+                <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-300 hover:bg-stone-800 transition-colors cursor-pointer">
+                  <Github className="w-4 h-4" />
+                  View on GitHub
+                </a>
+              )}
               <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-300 hover:bg-stone-800 transition-colors cursor-pointer">
                 <Copy className="w-4 h-4" />
                 Duplicate
               </button>
               <div className="h-px bg-stone-800 my-1" />
-              <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-stone-800 transition-colors cursor-pointer">
-                <Trash2 className="w-4 h-4" />
+              <button onClick={handleDelete} disabled={deleting} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-stone-800 transition-colors cursor-pointer disabled:opacity-50">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 Delete
               </button>
             </div>
@@ -253,11 +264,46 @@ function NewProjectCard() {
 export default function ProjectsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "draft" | "archived">("all");
   const headerRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
+
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: apiError } = await api.get<Project[]>('/api/projects');
+      if (apiError) {
+        setError(apiError);
+      } else {
+        setProjects(data || []);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load projects');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleDeleteProject = async (projectId: string) => {
+    const { error: deleteError } = await api.delete(`/api/projects/${projectId}`);
+    if (deleteError) {
+      alert(`Failed to delete: ${deleteError}`);
+    } else {
+      setProjects(prev => prev.filter(p => p.projectId !== projectId));
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      fetchProjects();
+    }
+  }, [isLoading, isAuthenticated, fetchProjects]);
 
   useEffect(() => {
     gsap.fromTo(headerRef.current,
@@ -270,18 +316,26 @@ export default function ProjectsPage() {
     );
   }, []);
 
-  const filteredProjects = mockProjects.filter(p => {
+  const filteredProjects = projects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         p.description.toLowerCase().includes(searchQuery.toLowerCase());
+                         (p.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === "all" || p.status === filter;
     return matchesSearch && matchesFilter;
   });
 
   const stats = {
-    total: mockProjects.length,
-    active: mockProjects.filter(p => p.status === "active").length,
-    draft: mockProjects.filter(p => p.status === "draft").length,
+    total: projects.length,
+    active: projects.filter(p => p.status === "active" || p.status === "completed").length,
+    draft: projects.filter(p => p.status === "draft").length,
   };
+
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-950">
+        <Loader2 className="w-6 h-6 text-white animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-950">
@@ -306,6 +360,13 @@ export default function ProjectsPage() {
               </div>
               
               <div ref={statsRef} className="flex items-center gap-6">
+                <button 
+                  onClick={fetchProjects}
+                  disabled={loading}
+                  className="p-2 text-stone-500 hover:text-white hover:bg-stone-800/50 rounded-lg transition-all disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
                 <div className="text-center">
                   <p className="text-2xl font-display font-medium text-white">{stats.total}</p>
                   <p className="text-xs text-stone-500 uppercase tracking-wider">Total</p>
@@ -384,6 +445,14 @@ export default function ProjectsPage() {
             </div>
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+              {error}
+              <button onClick={fetchProjects} className="ml-2 underline">Retry</button>
+            </div>
+          )}
+
           {filteredProjects.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-stone-900 flex items-center justify-center">
@@ -406,13 +475,13 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <NewProjectCard />
               {filteredProjects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index + 1} />
+                <ProjectCard key={project.projectId} project={project} index={index + 1} onDelete={handleDeleteProject} />
               ))}
             </div>
           ) : (
             <div className="space-y-3">
               {filteredProjects.map((project) => (
-                <Link key={project.id} href={`/projects/${project.id}`} className="cursor-pointer block">
+                <Link key={project.projectId} href={`/projects/${project.projectId}`} className="cursor-pointer block">
                   <div className="flex items-center gap-5 p-5 bg-stone-900/40 border border-stone-800/40 rounded-2xl hover:border-stone-700/60 hover:bg-stone-900/60 transition-all group">
                     <div className="w-12 h-12 rounded-xl bg-stone-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-stone-800 transition-colors">
                       <Layers className="w-5 h-5 text-stone-400 group-hover:text-white transition-colors" />
@@ -424,11 +493,11 @@ export default function ProjectsPage() {
                     <div className="hidden sm:flex items-center gap-8 text-xs text-stone-500">
                       <div className="flex items-center gap-1.5">
                         <Grid3X3 className="w-3.5 h-3.5" />
-                        {project.nodesCount} nodes
+                        {project.nodes_count} nodes
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
-                        {project.updatedAt}
+                        {formatDate(project.last_updated)}
                       </div>
                     </div>
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0 ${

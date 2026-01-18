@@ -5,15 +5,17 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 
-const DEV_BYPASS_AUTH = false; // Enabled for development
+const DEV_BYPASS_AUTH = false; // DISABLED - using real GitHub OAuth
 
 interface User {
   id: string;
   email: string;
   name?: string;
+  username?: string;
   avatarUrl?: string;
 }
 
@@ -22,72 +24,72 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGitHub: () => Promise<void>;
-  logout: () => Promise<void>;
+  loginWithGitHub: () => void;
+  logout: () => void;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEV_USER: User = {
-  id: "dev-user-123",
-  email: "dev@architex.app",
-  name: "Dev User",
-  avatarUrl: "https://i.pravatar.cc/150?u=dev",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshUser = async () => {
-    if (DEV_BYPASS_AUTH) {
-      setUser(DEV_USER);
-      return;
-    }
+  const refreshUser = useCallback(async () => {
+    console.log("[AuthContext] refreshUser called");
     try {
       const token = localStorage.getItem("access_token");
+      console.log("[AuthContext] Token from localStorage:", token ? `${token.slice(0, 20)}...` : "none");
+      
       if (!token) {
+        console.log("[AuthContext] No token, setting user to null");
         setUser(null);
         return;
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/me`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      console.log("[AuthContext] Fetching /api/auth/me from:", apiUrl);
+      
+      const response = await fetch(`${apiUrl}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("[AuthContext] /api/auth/me response status:", response.status);
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user || data);
+        console.log("[AuthContext] User data received:", data);
+        setUser({
+          id: data.id,
+          email: data.email || "",
+          name: data.name || data.username || "",
+          username: data.username,
+          avatarUrl: data.avatar_url,
+        });
       } else {
+        console.log("[AuthContext] Auth failed, clearing token");
         localStorage.removeItem("access_token");
         setUser(null);
       }
     } catch (error) {
-      console.error("Failed to refresh user:", error);
+      console.error("[AuthContext] Failed to refresh user:", error);
       setUser(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
+      console.log("[AuthContext] Initializing auth...");
       setIsLoading(true);
-      if (DEV_BYPASS_AUTH) {
-        setUser(DEV_USER);
-        setIsLoading(false);
-        return;
-      }
       await refreshUser();
       setIsLoading(false);
+      console.log("[AuthContext] Auth initialization complete");
     };
 
     initAuth();
-  }, []);
+  }, [refreshUser]);
 
   const login = async (email: string, password: string) => {
     const response = await fetch(
@@ -108,11 +110,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshUser();
   };
 
-  const loginWithGitHub = async () => {
+  const loginWithGitHub = () => {
+    console.log("[AuthContext] Initiating GitHub OAuth...");
     window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/github`;
   };
 
-  const logout = async () => {
+  const logout = () => {
+    console.log("[AuthContext] Logging out...");
     localStorage.removeItem("access_token");
     setUser(null);
   };

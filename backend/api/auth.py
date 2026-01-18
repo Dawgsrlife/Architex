@@ -2,7 +2,7 @@
 Authentication Routes
 GitHub OAuth flow for user authentication
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
@@ -138,4 +138,50 @@ async def github_auth_exchange(request: GitHubAuthRequest):
     return {
         "token": jwt_token,
         "user": user_data
+    }
+
+
+@router.get("/me")
+async def get_current_user_info(authorization: str = Header(None)):
+    """
+    Get current authenticated user info.
+    Frontend calls this on page load to validate token and get user data.
+    """
+    from api.deps import get_current_user
+    
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401, 
+            detail="Missing or invalid authorization header"
+        )
+    
+    token = authorization.replace("Bearer ", "")
+    
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.jwt_secret, 
+            algorithms=[settings.jwt_algorithm]
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=401, 
+            detail="Invalid authentication credentials"
+        )
+    
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    
+    user = await users_repo.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Return user info in the format frontend expects
+    return {
+        "id": user.get("userId"),
+        "username": user.get("name", "").split()[0] if user.get("name") else user.get("userId"),
+        "name": user.get("name", ""),
+        "email": user.get("email", ""),
+        "avatar_url": f"https://avatars.githubusercontent.com/u/{user.get('userId')}",
     }

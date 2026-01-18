@@ -33,6 +33,12 @@ def get_db():
     return _db
 
 
+def get_db_raw():
+    """Get database instance without raising (for background tasks)."""
+    global _db
+    return _db
+
+
 async def init_mongo(max_retries: int = 3, retry_delay: float = 1.0):
     """
     Initialize MongoDB connection with retry logic.
