@@ -470,43 +470,138 @@ class GenerationPlanBuilder:
             ],
         ))
     
-    # === BACKEND FILE BUILDERS ===
+    # === BACKEND FILE BUILDERS (RICH CONTEXT) ===
     
     def _add_fastapi_main(self):
-        routes = [f"/{entity.plural_name.lower()}" for entity in self.model.entities]
+        """Generate main.py with full initialization."""
+        routes = [entity.plural_name.lower() for entity in self.model.entities]
+        router_imports = ", ".join([f"{r}_router" for r in routes]) if routes else "# No routers yet"
         
         self.files.append(FileInstruction(
             path="main.py",
             file_type=FileType.ROUTE,
-            purpose="FastAPI application entry point",
+            purpose=f"FastAPI application entry point for {self.model.app_name}",
             must_include=[
                 "from fastapi import FastAPI",
-                "app = FastAPI()",
-                "CORS middleware",
-                *[f'@app.include_router' for _ in routes[:3]],  # Limit
+                "from fastapi.middleware.cors import CORSMiddleware",
+                "app = FastAPI(title='" + self.model.app_name + "')",
+                "# CORS - Allow all origins for demo",
+                "app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])",
+                "# Health check endpoint",
+                "@app.get('/health')",
+                "def health_check(): return {'status': 'healthy'}",
+                *[f"from routes.{r} import router as {r}_router" for r in routes[:5]],
+                *[f"app.include_router({r}_router, prefix='/{r}', tags=['{r.title()}'])" for r in routes[:5]],
             ],
-            must_not_include=["hardcoded secrets", "debug mode in production"],
+            must_not_include=["hardcoded secrets", "debug=True in production"],
+            template_hint="""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+# Import routers
+{router_imports}
+
+app = FastAPI(
+    title="{app_name}",
+    description="Auto-generated API by Architex",
+    version="1.0.0"
+)
+
+# CORS middleware - allow all origins for demo
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "app": "{app_name}"}
+
+# Include routers
+{router_includes}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+""",
         ))
     
     def _add_fastapi_database(self, database: str):
+        """Generate database.py with full connection logic."""
         if database == "postgres":
             self.files.append(FileInstruction(
                 path="database.py",
                 file_type=FileType.UTILITY,
-                purpose="Database connection with SQLAlchemy",
+                purpose="PostgreSQL database connection with SQLAlchemy ORM",
                 must_include=[
                     "from sqlalchemy import create_engine",
-                    "from sqlalchemy.orm import sessionmaker",
-                    "SQLALCHEMY_DATABASE_URL",
-                    "get_db dependency",
+                    "from sqlalchemy.ext.declarative import declarative_base",
+                    "from sqlalchemy.orm import sessionmaker, Session",
+                    "import os",
+                    "SQLALCHEMY_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://...')",
+                    "engine = create_engine(SQLALCHEMY_DATABASE_URL)",
+                    "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)",
+                    "Base = declarative_base()",
+                    "def get_db():",
+                    "    db = SessionLocal()",
+                    "    try:",
+                    "        yield db",
+                    "    finally:",
+                    "        db.close()",
                 ],
+                template_hint="""
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from typing import Generator
+import os
+
+# Database URL from environment variable
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://user:password@localhost:5432/dbname"
+)
+
+# Create engine
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+# Session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base class for models
+Base = declarative_base()
+
+def get_db() -> Generator[Session, None, None]:
+    \"\"\"Dependency that provides a database session.\"\"\"
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def create_tables():
+    \"\"\"Create all tables in the database.\"\"\"
+    Base.metadata.create_all(bind=engine)
+""",
             ))
     
     def _add_fastapi_model(self, entity: DomainEntity):
+        """Generate SQLAlchemy model with proper fields and relationships."""
+        # Build field descriptions
+        field_descriptions = []
+        for f in entity.fields:
+            ref = f" (FK to {f.reference_to})" if f.reference_to else ""
+            field_descriptions.append(f"  - {f.name}: {f.field_type}{ref}")
+        
+        related_entities = [f.reference_to for f in entity.fields if f.reference_to]
+        relationships = ", ".join(related_entities) if related_entities else "None"
+        
         self.files.append(FileInstruction(
             path=f"models/{entity.name.lower()}.py",
             file_type=FileType.MODEL,
-            purpose=f"SQLAlchemy model for {entity.name}",
+            purpose=f"SQLAlchemy ORM model for {entity.name} with full field definitions",
             entity=entity.name,
             entity_fields=[
                 {
@@ -519,78 +614,393 @@ class GenerationPlanBuilder:
                 for f in entity.fields
             ],
             must_include=[
-                "from sqlalchemy import Column",
+                "from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Text",
+                "from sqlalchemy.dialects.postgresql import UUID",
+                "from sqlalchemy.orm import relationship",
+                "from datetime import datetime",
+                "import uuid",
+                "from database import Base",
                 f"class {entity.name}(Base):",
-                f'__tablename__ = "{entity.plural_name.lower()}"',
+                f'    __tablename__ = "{entity.plural_name.lower()}"',
+                "    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)",
+                "    created_at = Column(DateTime, default=datetime.utcnow)",
+                "    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)",
+                *[f"    {f.name} = Column(...)" for f in entity.fields[:5] if f.name not in ['id', 'created_at', 'updated_at']],
             ],
             imports_from=["database.py"],
+            template_hint=f"""
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
+from database import Base
+
+class {entity.name}(Base):
+    \"\"\"
+    {entity.description}
+    
+    Related entities: {relationships}
+    \"\"\"
+    __tablename__ = "{entity.plural_name.lower()}"
+    
+    # Primary key
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Fields from architecture:
+{chr(10).join(['    # ' + d for d in field_descriptions])}
+    
+    # ADD YOUR COLUMN DEFINITIONS HERE based on the fields above
+    # Example: name = Column(String(255), nullable=False)
+    
+    def __repr__(self):
+        return f"<{entity.name}(id={{self.id}})>"
+""",
         ))
     
     def _add_fastapi_routes(self):
+        """Generate CRUD routes with full implementation."""
         for entity in self.model.entities:
             self.files.append(FileInstruction(
                 path=f"routes/{entity.name.lower()}.py",
                 file_type=FileType.ROUTE,
-                purpose=f"CRUD routes for {entity.name}",
+                purpose=f"Full CRUD API routes for {entity.name} with Pydantic schemas and error handling",
                 entity=entity.name,
                 must_include=[
-                    "from fastapi import APIRouter",
+                    "from fastapi import APIRouter, Depends, HTTPException, status",
+                    "from sqlalchemy.orm import Session",
+                    "from pydantic import BaseModel",
+                    "from typing import List, Optional",
+                    "from database import get_db",
+                    f"from models.{entity.name.lower()} import {entity.name}",
                     "router = APIRouter()",
-                    f"@router.get('/')",  # List
-                    f"@router.post('/')",  # Create
-                    "@router.get('/{id}')",  # Read
-                    "@router.put('/{id}')",  # Update
-                    "@router.delete('/{id}')",  # Delete
+                    "# Pydantic schemas",
+                    f"class {entity.name}Create(BaseModel):",
+                    f"class {entity.name}Response(BaseModel):",
+                    "    class Config: orm_mode = True",
+                    f"@router.get('/', response_model=List[{entity.name}Response])",
+                    f"def list_{entity.plural_name.lower()}(db: Session = Depends(get_db)):",
+                    f"@router.post('/', response_model={entity.name}Response, status_code=status.HTTP_201_CREATED)",
+                    f"def create_{entity.name.lower()}(data: {entity.name}Create, db: Session = Depends(get_db)):",
+                    f"@router.get('/{{id}}', response_model={entity.name}Response)",
+                    f"def get_{entity.name.lower()}(id: str, db: Session = Depends(get_db)):",
+                    "    if not item: raise HTTPException(status_code=404, detail='Not found')",
+                    f"@router.put('/{{id}}', response_model={entity.name}Response)",
+                    f"@router.delete('/{{id}}', status_code=status.HTTP_204_NO_CONTENT)",
                 ],
-                imports_from=[f"models/{entity.name.lower()}.py"],
+                imports_from=[f"models/{entity.name.lower()}.py", "database.py"],
+                template_hint=f"""
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from uuid import UUID
+from datetime import datetime
+
+from database import get_db
+from models.{entity.name.lower()} import {entity.name}
+
+router = APIRouter()
+
+# ============ Pydantic Schemas ============
+
+class {entity.name}Create(BaseModel):
+    \"\"\"Schema for creating a new {entity.name}.\"\"\"
+    # Add fields here based on entity fields
+    pass
+
+class {entity.name}Update(BaseModel):
+    \"\"\"Schema for updating a {entity.name}.\"\"\"
+    # All fields optional for partial updates
+    pass
+
+class {entity.name}Response(BaseModel):
+    \"\"\"Schema for {entity.name} response.\"\"\"
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    # Add other fields
+    
+    class Config:
+        orm_mode = True
+
+# ============ CRUD Endpoints ============
+
+@router.get("/", response_model=List[{entity.name}Response])
+def list_{entity.plural_name.lower()}(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db)
+):
+    \"\"\"List all {entity.plural_name}.\"\"\"
+    items = db.query({entity.name}).offset(skip).limit(limit).all()
+    return items
+
+@router.post("/", response_model={entity.name}Response, status_code=status.HTTP_201_CREATED)
+def create_{entity.name.lower()}(data: {entity.name}Create, db: Session = Depends(get_db)):
+    \"\"\"Create a new {entity.name}.\"\"\"
+    item = {entity.name}(**data.dict())
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+@router.get("/{{id}}", response_model={entity.name}Response)
+def get_{entity.name.lower()}(id: str, db: Session = Depends(get_db)):
+    \"\"\"Get a {entity.name} by ID.\"\"\"
+    item = db.query({entity.name}).filter({entity.name}.id == id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="{entity.name} not found")
+    return item
+
+@router.put("/{{id}}", response_model={entity.name}Response)
+def update_{entity.name.lower()}(id: str, data: {entity.name}Update, db: Session = Depends(get_db)):
+    \"\"\"Update a {entity.name}.\"\"\"
+    item = db.query({entity.name}).filter({entity.name}.id == id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="{entity.name} not found")
+    for key, value in data.dict(exclude_unset=True).items():
+        setattr(item, key, value)
+    db.commit()
+    db.refresh(item)
+    return item
+
+@router.delete("/{{id}}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_{entity.name.lower()}(id: str, db: Session = Depends(get_db)):
+    \"\"\"Delete a {entity.name}.\"\"\"
+    item = db.query({entity.name}).filter({entity.name}.id == id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="{entity.name} not found")
+    db.delete(item)
+    db.commit()
+    return None
+""",
             ))
     
-    # === FRONTEND FILE BUILDERS ===
+    # === FRONTEND FILE BUILDERS (RICH CONTEXT) ===
     
     def _add_nextjs_layout(self):
+        """Generate root layout with full metadata and navigation."""
+        nav_links = [f"/{entity.plural_name.lower()}" for entity in self.model.entities]
+        
         self.files.append(FileInstruction(
             path="src/app/layout.tsx",
             file_type=FileType.PAGE,
-            purpose="Root layout with navigation and providers",
+            purpose=f"Root layout for {self.model.app_name} with navigation and global styles",
             must_include=[
-                "export default function RootLayout",
-                "<html>",
-                "<body>",
-                "Inter font",
-                "metadata export",
+                "import './globals.css'",
+                "import { Inter } from 'next/font/google'",
+                "const inter = Inter({ subsets: ['latin'] })",
+                "export const metadata = { title: '" + self.model.app_name + "', description: '...' }",
+                "export default function RootLayout({ children })",
+                "<html lang='en'>",
+                "<body className={inter.className}>",
+                "// Navigation bar with links",
+                "<nav className='...'>",
+                *[f"<Link href='{link}'>" for link in nav_links[:3]],
+                "{children}",
+                "</body>",
+                "</html>",
             ],
+            template_hint=f"""
+import './globals.css'
+import {{ Inter }} from 'next/font/google'
+import Link from 'next/link'
+
+const inter = Inter({{ subsets: ['latin'] }})
+
+export const metadata = {{
+  title: '{self.model.app_name}',
+  description: 'Auto-generated by Architex - {self.model.intent[:50]}...',
+}}
+
+export default function RootLayout({{
+  children,
+}}: {{
+  children: React.ReactNode
+}}) {{
+  return (
+    <html lang="en">
+      <body className={{inter.className + ' bg-gray-50 dark:bg-gray-900 min-h-screen'}}>
+        {{/* Navigation */}}
+        <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
+                  {self.model.app_name}
+                </Link>
+                <div className="hidden md:ml-6 md:flex md:space-x-4">
+                  <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                    Dashboard
+                  </Link>
+                  {' '.join([f'<Link href="/{e.plural_name.lower()}">{e.plural_name}</Link>' for e in self.model.entities[:3]])}
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+        {{/* Main content */}}
+        <main>{{children}}</main>
+      </body>
+    </html>
+  )
+}}
+""",
         ))
     
     def _add_nextjs_globals(self):
+        """Generate global CSS with Tailwind and custom theme."""
         self.files.append(FileInstruction(
             path="src/app/globals.css",
             file_type=FileType.STYLE,
-            purpose="Global styles with Tailwind",
+            purpose="Global styles with Tailwind CSS and custom theme",
             must_include=[
-                "@tailwind base",
-                "@tailwind components",
-                "@tailwind utilities",
+                "@tailwind base;",
+                "@tailwind components;",
+                "@tailwind utilities;",
+                "/* Custom component classes */",
+                ".btn-primary { @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors; }",
+                ".card { @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6; }",
+                ".input { @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent; }",
             ],
+            template_hint="""
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom component classes for consistent styling */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+""",
         ))
     
     def _add_nextjs_api_client(self):
-        routes = [f"/{entity.plural_name.lower()}" for entity in self.model.entities]
+        """Generate typed API client with functions for all entities."""
+        entities = self.model.entities
         
         self.files.append(FileInstruction(
             path="src/lib/api.ts",
             file_type=FileType.UTILITY,
-            purpose="API client for backend communication",
+            purpose="Typed API client with CRUD functions for all entities",
             must_include=[
-                "const API_URL = process.env.NEXT_PUBLIC_API_URL",
-                "async function fetchApi",
-                *[f"// {route} endpoints" for route in routes[:3]],
+                "const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'",
+                "// Generic fetch wrapper with error handling",
+                "async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T>",
+                "// Handle response errors",
+                "if (!response.ok) throw new Error(...)",
+                *[f"// {entity.name} API functions" for entity in entities[:3]],
+                *[f"export async function get{entity.plural_name}()" for entity in entities[:3]],
+                *[f"export async function create{entity.name}(data: {entity.name}Create)" for entity in entities[:3]],
+                *[f"export async function delete{entity.name}(id: string)" for entity in entities[:3]],
             ],
-            must_not_include=["hardcoded URLs"],
+            must_not_include=["hardcoded localhost in production code"],
+            template_hint=f"""
+// API Client - Auto-generated by Architex
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// ============ Types ============
+{chr(10).join([f'''
+export interface {e.name} {{
+  id: string;
+  created_at: string;
+  updated_at: string;
+  // Add fields based on your schema
+}}
+
+export interface {e.name}Create {{
+  // Fields for creating a new {e.name}
+}}
+''' for e in entities])}
+
+// ============ Generic Fetch Wrapper ============
+
+async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {{
+  const response = await fetch(`${{API_URL}}${{endpoint}}`, {{
+    headers: {{
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    }},
+    ...options,
+  }});
+  
+  if (!response.ok) {{
+    const error = await response.json().catch(() => ({{ detail: 'Unknown error' }}));
+    throw new Error(error.detail || `HTTP ${{response.status}}`);
+  }}
+  
+  if (response.status === 204) return undefined as T;
+  return response.json();
+}}
+
+// ============ Entity API Functions ============
+{chr(10).join([f'''
+// --- {e.plural_name} ---
+export async function get{e.plural_name}(): Promise<{e.name}[]> {{
+  return fetchApi<{e.name}[]>('/{e.plural_name.lower()}');
+}}
+
+export async function get{e.name}(id: string): Promise<{e.name}> {{
+  return fetchApi<{e.name}>(`/{e.plural_name.lower()}/${{id}}`);
+}}
+
+export async function create{e.name}(data: {e.name}Create): Promise<{e.name}> {{
+  return fetchApi<{e.name}>('/{e.plural_name.lower()}', {{
+    method: 'POST',
+    body: JSON.stringify(data),
+  }});
+}}
+
+export async function update{e.name}(id: string, data: Partial<{e.name}Create>): Promise<{e.name}> {{
+  return fetchApi<{e.name}>(`/{e.plural_name.lower()}/${{id}}`, {{
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }});
+}}
+
+export async function delete{e.name}(id: string): Promise<void> {{
+  return fetchApi<void>(`/{e.plural_name.lower()}/${{id}}`, {{ method: 'DELETE' }});
+}}
+''' for e in entities])}
+""",
         ))
     
     def _add_nextjs_landing_page(self):
-        """MANDATORY: Main landing page that implements the user's intent."""
-        # Build feature list from entities
+        """MANDATORY: Main landing page with hero, features, and CTA."""
         features = [entity.plural_name for entity in self.model.entities]
         if not features:
             features = ["Core Features", "User Management", "Analytics"]
@@ -598,17 +1008,126 @@ class GenerationPlanBuilder:
         self.files.append(FileInstruction(
             path="src/app/page.tsx",
             file_type=FileType.PAGE,
-            purpose=f"Main landing page implementing: {self.model.intent}",
+            purpose=f"Professional landing page for {self.model.app_name} implementing: {self.model.intent}",
             must_include=[
-                "export default function HomePage",
-                "Modern Tailwind CSS styling",
-                "'use client' directive if using hooks",
-                "Hero section with title and description",
-                "Feature cards or list section",
-                "Call-to-action button",
-                f"App title: {self.model.app_name}",
+                "'use client'",
+                "import Link from 'next/link'",
+                "export default function HomePage()",
+                "// Hero section with gradient background",
+                "<section className='bg-gradient-to-br from-blue-600 to-purple-700'>",
+                f"<h1 className='text-4xl md:text-6xl font-bold'>{self.model.app_name}</h1>",
+                "<p className='text-xl text-gray-200'>",
+                "// Features grid",
+                "<div className='grid md:grid-cols-3 gap-8'>",
+                *[f"// Feature card: {f}" for f in features[:3]],
+                "// Call to action",
+                "<Link href='/dashboard' className='btn-primary'>",
+                "Get Started",
+                "</a>",
             ],
-            must_not_include=["placeholder text only", "lorem ipsum"],
+            must_not_include=["Lorem ipsum", "placeholder", "TODO"],
+            template_hint=f"""
+'use client'
+
+import Link from 'next/link'
+import {{ ArrowRight, CheckCircle, Sparkles, Zap }} from 'lucide-react'
+
+export default function HomePage() {{
+  const features = [
+{chr(10).join([f"    {{ title: '{f}', description: 'Manage your {f.lower()} efficiently with our intuitive interface.', icon: CheckCircle }}," for f in features[:4]])}
+  ];
+
+  return (
+    <div className="min-h-screen">
+      {{/* Hero Section */}}
+      <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center px-4 py-2 bg-white/10 rounded-full text-sm font-medium mb-6">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Generated by Architex
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            {self.model.app_name}
+          </h1>
+          <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-8">
+            {self.model.intent[:100]}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl"
+            >
+              Get Started
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Link>
+            <Link 
+              href="#features" 
+              className="inline-flex items-center justify-center px-8 py-4 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-all"
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {{/* Features Section */}}
+      <section id="features" className="py-20 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Everything you need
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Powerful features to manage your data efficiently
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {{features.map((feature, index) => (
+              <div key={{index}} className="card hover:border-blue-500/50">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  {{feature.title}}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {{feature.description}}
+                </p>
+              </div>
+            ))}}
+          </div>
+        </div>
+      </section>
+
+      {{/* CTA Section */}}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to get started?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Start managing your data today with our powerful platform.
+          </p>
+          <Link 
+            href="/dashboard" 
+            className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg"
+          >
+            <Zap className="w-5 h-5 mr-2" />
+            Launch Dashboard
+          </Link>
+        </div>
+      </section>
+
+      {{/* Footer */}}
+      <footer className="bg-gray-900 text-gray-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p>&copy; 2024 {self.model.app_name}. Built with Architex.</p>
+        </div>
+      </footer>
+    </div>
+  )
+}}
+""",
         ))
         
         # Also add a main feature component if we have entities
@@ -617,16 +1136,161 @@ class GenerationPlanBuilder:
             self.files.append(FileInstruction(
                 path=f"src/components/{primary_entity.name}List.tsx",
                 file_type=FileType.COMPONENT,
-                purpose=f"Interactive list component for {primary_entity.plural_name}",
+                purpose=f"Interactive CRUD list component for {primary_entity.plural_name} with add/edit/delete",
                 entity=primary_entity.name,
                 must_include=[
-                    f"export function {primary_entity.name}List",
-                    "useState for data management",
-                    "Tailwind CSS styling",
-                    "Map over items to render list",
-                    "Add/delete functionality",
+                    "'use client'",
+                    "import { useState, useEffect } from 'react'",
+                    f"import {{ get{primary_entity.plural_name}, create{primary_entity.name}, delete{primary_entity.name} }} from '@/lib/api'",
+                    f"interface {primary_entity.name} {{ id: string; /* ... */ }}",
+                    f"export function {primary_entity.name}List()",
+                    f"const [items, setItems] = useState<{primary_entity.name}[]>([])",
+                    "const [loading, setLoading] = useState(true)",
+                    "const [newItem, setNewItem] = useState('')",
+                    "// Fetch items on mount",
+                    "useEffect(() => { fetchItems() }, [])",
+                    "// Add new item handler",
+                    "const handleAdd = async () => { ... }",
+                    "// Delete item handler",
+                    "const handleDelete = async (id: string) => { ... }",
+                    "// Render loading state",
+                    "// Render items list with map",
+                    "// Render add form",
                 ],
                 imports_from=["src/lib/api.ts"],
+                template_hint=f"""
+'use client'
+
+import {{ useState, useEffect }} from 'react'
+import {{ get{primary_entity.plural_name}, create{primary_entity.name}, delete{primary_entity.name} }} from '@/lib/api'
+import {{ Plus, Trash2, Loader2 }} from 'lucide-react'
+
+interface {primary_entity.name} {{
+  id: string;
+  created_at: string;
+  // Add other fields
+}}
+
+export function {primary_entity.name}List() {{
+  const [items, setItems] = useState<{primary_entity.name}[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newItemName, setNewItemName] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  // Fetch items on mount
+  useEffect(() => {{
+    fetchItems();
+  }}, []);
+
+  const fetchItems = async () => {{
+    try {{
+      setLoading(true);
+      const data = await get{primary_entity.plural_name}();
+      setItems(data);
+      setError(null);
+    }} catch (err) {{
+      setError(err instanceof Error ? err.message : 'Failed to load items');
+    }} finally {{
+      setLoading(false);
+    }}
+  }};
+
+  const handleAdd = async (e: React.FormEvent) => {{
+    e.preventDefault();
+    if (!newItemName.trim()) return;
+    
+    try {{
+      setCreating(true);
+      const newItem = await create{primary_entity.name}({{ name: newItemName }});
+      setItems([...items, newItem]);
+      setNewItemName('');
+    }} catch (err) {{
+      setError(err instanceof Error ? err.message : 'Failed to create item');
+    }} finally {{
+      setCreating(false);
+    }}
+  }};
+
+  const handleDelete = async (id: string) => {{
+    try {{
+      await delete{primary_entity.name}(id);
+      setItems(items.filter(item => item.id !== id));
+    }} catch (err) {{
+      setError(err instanceof Error ? err.message : 'Failed to delete item');
+    }}
+  }};
+
+  if (loading) {{
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }}
+
+  return (
+    <div className="space-y-6">
+      {{/* Add form */}}
+      <form onSubmit={{handleAdd}} className="flex gap-4">
+        <input
+          type="text"
+          value={{newItemName}}
+          onChange={{(e) => setNewItemName(e.target.value)}}
+          placeholder="Add new {primary_entity.name.lower()}..."
+          className="input flex-1"
+        />
+        <button
+          type="submit"
+          disabled={{creating}}
+          className="btn-primary flex items-center gap-2"
+        >
+          {{creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}}
+          Add
+        </button>
+      </form>
+
+      {{/* Error message */}}
+      {{error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+          {{error}}
+        </div>
+      )}}
+
+      {{/* Items list */}}
+      <div className="space-y-3">
+        {{items.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            No {primary_entity.plural_name.lower()} yet. Add one above!
+          </div>
+        ) : (
+          items.map((item) => (
+            <div
+              key={{item.id}}
+              className="card flex items-center justify-between"
+            >
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {{item.id}}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Created: {{new Date(item.created_at).toLocaleDateString()}}
+                </p>
+              </div>
+              <button
+                onClick={{() => handleDelete(item.id)}}
+                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+          ))
+        )}}
+      </div>
+    </div>
+  );
+}}
+""",
             ))
     
     def _add_nextjs_auth_pages(self):
