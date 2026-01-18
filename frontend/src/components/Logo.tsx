@@ -14,13 +14,8 @@ export function Logo({ className = "", animated = true, size = "md" }: LogoProps
 
   const sizes = {
     sm: { width: 32, height: 32, text: "text-lg" },
-<<<<<<< HEAD
-    md: { width: 40, height: 40, text: "text-2xl" },
-    lg: { width: 56, height: 56, text: "text-4xl" },
-=======
     md: { width: 40, height: 40, text: "text-xl" },
     lg: { width: 56, height: 56, text: "text-3xl" },
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
   };
 
   useEffect(() => {
@@ -47,77 +42,35 @@ export function Logo({ className = "", animated = true, size = "md" }: LogoProps
         xmlns="http://www.w3.org/2000/svg"
         className="flex-shrink-0"
       >
-<<<<<<< HEAD
-        <defs>
-          <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#7c3aed" />
-            <stop offset="100%" stopColor="#a78bfa" />
-          </linearGradient>
-        </defs>
-=======
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
         <rect
           x="2"
           y="2"
           width="44"
           height="44"
           rx="12"
-<<<<<<< HEAD
-          fill="white"
-          className="shadow-inner"
-        />
-        <path
-          d="M14 34L24 14L34 34"
-          stroke="url(#logo-gradient)"
-          strokeWidth="3.5"
-=======
           fill="#1c1917"
-          className="dark:fill-[#fafaf9]"
         />
         <path
           d="M14 34L24 14L34 34"
-          stroke="#7c3aed"
+          stroke="#fafaf9"
           strokeWidth="2.5"
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
-<<<<<<< HEAD
-          d="M18 28H30"
-          stroke="#7c3aed"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          opacity="0.8"
-=======
           d="M17 28H31"
-          stroke="#a78bfa"
+          stroke="#a1a1aa"
           strokeWidth="2.5"
           strokeLinecap="round"
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
         />
         <circle
           cx="24"
           cy="14"
-<<<<<<< HEAD
-          r="3.5"
-          fill="#7c3aed"
-        />
-      </svg>
-      <span className={`font-bold tracking-tight ${sizes[size].text} text-stone-900 dark:text-white`}>
-=======
           r="3"
-          fill="#7c3aed"
-        />
-        <path
-          d="M24 20V24"
-          stroke="#a78bfa"
-          strokeWidth="2"
-          strokeLinecap="round"
+          fill="#fafaf9"
         />
       </svg>
-      <span className={`font-bold tracking-tight ${sizes[size].text}`}>
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
+      <span className={`font-display font-bold tracking-tight ${sizes[size].text} text-stone-900`}>
         Architex
       </span>
     </div>
@@ -134,72 +87,33 @@ export function LogoMark({ className = "", size = 40 }: { className?: string; si
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-<<<<<<< HEAD
-      <defs>
-        <linearGradient id="logomark-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7c3aed" />
-          <stop offset="100%" stopColor="#a78bfa" />
-        </linearGradient>
-      </defs>
-=======
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
       <rect
         x="2"
         y="2"
         width="44"
         height="44"
         rx="12"
-<<<<<<< HEAD
-        fill="white"
-      />
-      <path
-        d="M14 34L24 14L34 34"
-        stroke="url(#logomark-gradient)"
-        strokeWidth="3.5"
-=======
         fill="#1c1917"
-        className="dark:fill-[#fafaf9]"
       />
       <path
         d="M14 34L24 14L34 34"
-        stroke="#7c3aed"
+        stroke="#fafaf9"
         strokeWidth="2.5"
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-<<<<<<< HEAD
-        d="M18 28H30"
-        stroke="#7c3aed"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        opacity="0.8"
-=======
         d="M17 28H31"
-        stroke="#a78bfa"
+        stroke="#a1a1aa"
         strokeWidth="2.5"
         strokeLinecap="round"
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
       />
       <circle
         cx="24"
         cy="14"
-<<<<<<< HEAD
-        r="3.5"
-        fill="#7c3aed"
-      />
-=======
         r="3"
-        fill="#7c3aed"
+        fill="#fafaf9"
       />
-      <path
-        d="M24 20V24"
-        stroke="#a78bfa"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
->>>>>>> 39327ed3e4010a3d6f948d9ef4dc0d9b8a81dd15
     </svg>
   );
 }

@@ -133,7 +133,14 @@ export function Navbar() {
             </div>
 
             <Link 
-              href="/workflow" 
+              href="/login" 
+              className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
+            >
+              Sign In
+            </Link>
+
+            <Link 
+              href="/projects/new" 
               className={`text-[11px] px-4 py-2 rounded-full transition-all duration-500 ease-out tracking-widest uppercase font-medium ${buttonStyle}`}
             >
               Start Project
