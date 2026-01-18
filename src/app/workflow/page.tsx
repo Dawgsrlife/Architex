@@ -7,7 +7,7 @@ export default function WorkflowPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/projects/new");
+    router.replace("/dashboard/new");
   }, [router]);
 
   return null;

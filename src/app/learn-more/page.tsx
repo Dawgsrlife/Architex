@@ -40,7 +40,7 @@ function Navbar() {
               Sign in
             </Link>
             <Link 
-              href="/projects/new"
+              href="/dashboard/new"
               className="px-4 py-2 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
             >
               Get Started
@@ -83,7 +83,7 @@ function HeroSection() {
 
         <div className="hero-content flex flex-wrap gap-4">
           <Link 
-            href="/projects/new"
+            href="/dashboard/new"
             className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
           >
             Start Building
@@ -321,7 +321,7 @@ function CTASection() {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link 
-            href="/projects/new"
+            href="/dashboard/new"
             className="inline-flex items-center gap-2 px-8 py-4 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
           >
             Start Building Free

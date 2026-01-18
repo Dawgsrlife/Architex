@@ -49,7 +49,7 @@ export function CTASection() {
           </h2>
           
             <Link 
-              href="/projects/new" 
+              href="/dashboard/new" 
               className="inline-flex items-center gap-6 group"
             >
             <span className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-stone-900 group-hover:scale-110 transition-transform">

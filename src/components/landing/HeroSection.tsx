@@ -46,7 +46,7 @@ export function HeroSection() {
           
 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 mt-16">
                 <Link 
-                  href="/projects/new" 
+                  href="/dashboard/new" 
                   className="px-8 py-4 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
                 >
                   Start Building
