@@ -27,11 +27,15 @@ import logging
 import shutil
 import subprocess
 import httpx
+import os
 from typing import Dict, Any, Optional
 from pathlib import Path
 from enum import Enum
 
 from services.cline import cline_service
+from services.mock_app_generator import generate_mock_app
+from services.code_generator import generate_codebase
+from services.architecture_translator import translate_architecture
 from services.socket_manager import socket_manager
 from database.mongo import get_db
 from repos import jobs_repo, users_repo, projects_repo
@@ -123,15 +127,102 @@ class JobWorker:
             await self._log(user_id, job_id, "Git repository initialized")
             
             # ─────────────────────────────────────────────────────────────
-            # PHASE 4: Execute agent (Cline + Gemini)
+            # PHASE 4: Generate code based on mode
             # ─────────────────────────────────────────────────────────────
+            # Modes:
+            # - USE_LLM=true  → Intelligent code generation (burns quota, real AI)
+            # - FAKE_LLM=true → Mock templates (instant, zero quota, for demos)
+            # - Default       → Try intelligent generation, fallback to mock
             architecture_spec = job.get("architecture_spec", {})
-            await self._log(user_id, job_id, "Starting code generation agent...")
             
-            success = await cline_service.run_agent(job_id, workspace_path, architecture_spec)
+            # Log the translated spec for observability
+            translated_spec = translate_architecture(architecture_spec)
+            await jobs_repo.update_job_progress(
+                userId=user_id,
+                jobId=job_id,
+                current_step="Translating architecture...",
+                translated_spec=translated_spec
+            )
+            await self._log(user_id, job_id, "Architecture translated to semantic spec")
             
-            if not success:
-                raise RuntimeError("Agent failed to complete code generation")
+            # Determine generation mode
+            use_llm = os.getenv("USE_LLM", "").lower() in ("true", "1", "yes")
+            fake_llm = os.getenv("FAKE_LLM", "").lower() in ("true", "1", "yes")
+            
+            async def progress_callback(current_step, files_created, iteration, spec):
+                await jobs_repo.update_job_progress(
+                    userId=user_id,
+                    jobId=job_id,
+                    current_step=current_step,
+                    files_created=files_created,
+                    total_iterations=iteration
+                )
+                await self._log(user_id, job_id, current_step)
+            
+            if fake_llm:
+                # DEMO MODE: Use templates (instant, zero quota)
+                await self._log(user_id, job_id, "🎭 Demo mode: Generating from templates...")
+                
+                files_written = generate_mock_app(architecture_spec, workspace_path)
+                
+                await jobs_repo.update_job_progress(
+                    userId=user_id,
+                    jobId=job_id,
+                    current_step=f"Generated {len(files_written)} files",
+                    files_created=files_written,
+                    total_iterations=1
+                )
+                
+                for f in files_written[:5]:
+                    await self._log(user_id, job_id, f"  → {f}")
+                if len(files_written) > 5:
+                    await self._log(user_id, job_id, f"  ... and {len(files_written) - 5} more files")
+                    
+            elif use_llm:
+                # INTELLIGENT MODE: Real AI code generation
+                await self._log(user_id, job_id, "🧠 Intelligent mode: Generating with AI...")
+                
+                try:
+                    files_written = await generate_codebase(
+                        architecture_spec,
+                        workspace_path,
+                        progress_callback=progress_callback
+                    )
+                    
+                    await self._log(user_id, job_id, f"Generated {len(files_written)} files with AI")
+                    
+                except Exception as e:
+                    logger.error(f"AI generation failed: {e}, falling back to templates")
+                    await self._log(user_id, job_id, f"⚠️ AI failed, falling back to templates: {e}")
+                    warnings.append(f"AI generation failed: {e}")
+                    
+                    # Fallback to mock generator
+                    files_written = generate_mock_app(architecture_spec, workspace_path)
+            else:
+                # DEFAULT MODE: Try AI, fallback to templates
+                await self._log(user_id, job_id, "🚀 Attempting intelligent generation...")
+                
+                try:
+                    files_written = await generate_codebase(
+                        architecture_spec,
+                        workspace_path,
+                        progress_callback=progress_callback
+                    )
+                    await self._log(user_id, job_id, f"✅ Generated {len(files_written)} files with AI")
+                    
+                except Exception as e:
+                    logger.warning(f"AI generation unavailable: {e}, using templates")
+                    await self._log(user_id, job_id, f"📦 Using template generation...")
+                    
+                    files_written = generate_mock_app(architecture_spec, workspace_path)
+                    
+                    await jobs_repo.update_job_progress(
+                        userId=user_id,
+                        jobId=job_id,
+                        current_step=f"Generated {len(files_written)} files",
+                        files_created=files_written,
+                        total_iterations=1
+                    )
             
             await self._log(user_id, job_id, "Code generation complete")
             

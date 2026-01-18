@@ -1,33 +1,49 @@
 """
 Gemini AI Service
 Handles AI code generation and architecture suggestions
+
+Implements LLMInterface for interchangeability with Groq and other providers.
 """
 
 import os
 import logging
-from typing import Dict, Any, Optional
+import json
+import re
+from typing import Dict, Any, Optional, List
 import google.generativeai as genai
+
+from services.llm_interface import LLMInterface
 
 logger = logging.getLogger(__name__)
 
-class GeminiService:
+
+class GeminiService(LLMInterface):
     """Service for Google Gemini AI integration"""
     
-    def __init__(self):
+    def __init__(self, model_name: str = "gemini-2.0-flash"):
+        self.model_name = model_name
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
         if api_key:
             genai.configure(api_key=api_key)
             # Use gemini-2.0-flash for fast, cost-effective generation
-            self.model = genai.GenerativeModel('gemini-2.0-flash')
+            self.model = genai.GenerativeModel(model_name)
         else:
             logger.warning("GOOGLE_GEMINI_API_KEY not set")
             self.model = None
     
+    @property
+    def is_configured(self) -> bool:
+        return self.model is not None
+    
+    @property
+    def provider_name(self) -> str:
+        return f"Gemini ({self.model_name})"
+    
     async def generate_architecture(
         self, 
         description: str, 
-        requirements: Optional[list] = None,
-        tech_stack: Optional[list] = None
+        requirements: Optional[List] = None,
+        tech_stack: Optional[List] = None
     ) -> Dict[str, Any]:
         """
         Generate architecture from natural language description
@@ -82,8 +98,8 @@ class GeminiService:
     
     async def generate_agent_response(
         self,
-        history: list[dict],
-        tools: Optional[list[dict]] = None
+        history: List[Dict],
+        tools: Optional[List[Dict]] = None
     ) -> Dict[str, Any]:
         """
         Generate a response in an agentic loop, supporting tools.
