@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { 
   Plus, 
@@ -18,6 +19,7 @@ import {
   Settings,
   ChevronDown
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Project {
   id: string;
@@ -38,6 +40,13 @@ const mockProjects: Project[] = [
 
 function DashboardNav() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-stone-950/80 backdrop-blur-xl border-b border-stone-800/50">
@@ -48,7 +57,7 @@ function DashboardNav() {
               Architex
             </Link>
             <div className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard" className="px-4 py-2 text-sm text-white font-medium">
+              <Link href="/projects" className="px-4 py-2 text-sm text-white font-medium">
                 Projects
               </Link>
               <Link href="/dashboard" className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors">
@@ -74,8 +83,12 @@ function DashboardNav() {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-stone-800/50 transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stone-600 to-stone-800 flex items-center justify-center text-white text-sm font-medium">
-                  U
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stone-600 to-stone-800 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                  {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.name || "User"} className="w-full h-full object-cover" />
+                  ) : (
+                    user?.name?.charAt(0) || user?.email?.charAt(0) || "U"
+                  )}
                 </div>
                 <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
               </button>
@@ -85,15 +98,18 @@ function DashboardNav() {
                   <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
                   <div className="absolute right-0 top-full mt-2 w-48 bg-stone-900 border border-stone-800 rounded-xl shadow-xl z-50 overflow-hidden">
                     <div className="p-3 border-b border-stone-800">
-                      <p className="text-sm font-medium text-white">User</p>
-                      <p className="text-xs text-stone-400">user@example.com</p>
+                      <p className="text-sm font-medium text-white">{user?.name || "User"}</p>
+                      <p className="text-xs text-stone-400 truncate">{user?.email}</p>
                     </div>
                     <div className="p-1">
                       <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 rounded-lg transition-colors">
                         <Settings className="w-4 h-4" />
                         Settings
                       </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-stone-800 rounded-lg transition-colors">
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-stone-800 rounded-lg transition-colors"
+                      >
                         <LogOut className="w-4 h-4" />
                         Sign out
                       </button>
@@ -196,17 +212,39 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "draft" | "archived">("all");
   const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    gsap.fromTo(headerRef.current,
-      { opacity: 0, y: -20 },
-      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      gsap.fromTo(headerRef.current,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      );
+    }
+  }, [isAuthenticated]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-stone-600 border-t-white rounded-full animate-spin" />
+      </div>
     );
-  }, []);
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const filteredProjects = mockProjects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

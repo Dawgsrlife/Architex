@@ -11,22 +11,23 @@ function AuthCallbackContent() {
     const token = searchParams.get("token");
 
     if (token) {
-      // Store token in localStorage
-      localStorage.setItem("auth_token", token);
-
-      // Redirect to projects page
-      router.push("/projects");
+      localStorage.setItem("access_token", token);
+      
+      const redirectPath = localStorage.getItem("redirect_after_login");
+      localStorage.removeItem("redirect_after_login");
+      
+      router.push(redirectPath || "/projects");
     } else {
-      // Redirect to home if no token
       router.push("/");
     }
   }, [searchParams, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-stone-950">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Authenticating...</h1>
-        <p className="text-muted-foreground">Please wait while we log you in.</p>
+        <div className="w-8 h-8 border-2 border-stone-600 border-t-white rounded-full animate-spin mx-auto mb-4" />
+        <h1 className="text-xl font-medium text-white mb-2">Authenticating...</h1>
+        <p className="text-stone-400 text-sm">Please wait while we log you in.</p>
       </div>
     </div>
   );
@@ -35,10 +36,11 @@ function AuthCallbackContent() {
 export default function AuthCallback() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-stone-950">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Authenticating...</h1>
-          <p className="text-muted-foreground">Please wait while we log you in.</p>
+          <div className="w-8 h-8 border-2 border-stone-600 border-t-white rounded-full animate-spin mx-auto mb-4" />
+          <h1 className="text-xl font-medium text-white mb-2">Authenticating...</h1>
+          <p className="text-stone-400 text-sm">Please wait while we log you in.</p>
         </div>
       </div>
     }>
