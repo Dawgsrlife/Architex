@@ -12,18 +12,19 @@ export default function NewProjectPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    if (isLoading) return;
+    useEffect(() => {
+      if (isLoading) return;
 
-    if (!isAuthenticated) {
-      localStorage.setItem("redirect_after_login", "/projects/new");
-      router.replace("/login");
-      return;
-    }
+      if (!isAuthenticated) {
+        localStorage.setItem("redirect_after_login", "/projects");
+        router.replace("/login");
+        return;
+      }
 
-    clearCanvas();
-    setIsInitialized(true);
-  }, [isAuthenticated, isLoading, clearCanvas, router]);
+      clearCanvas();
+      setIsInitialized(true);
+      router.replace("/workflow");
+    }, [isAuthenticated, isLoading, clearCanvas, router]);
 
   if (isLoading || !isInitialized) {
     return (

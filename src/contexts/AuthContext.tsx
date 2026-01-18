@@ -92,12 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGitHub = async () => {
-    // Redirect to GitHub OAuth
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    const scope = "read:user user:email repo";
-
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/github`;
   };
 
   const logout = async () => {
