@@ -75,10 +75,10 @@ function DashboardNav() {
           <div className="flex items-center gap-4">
             <Link 
               href="/dashboard/new"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              New Project
+              <span className="hidden sm:inline">New Project</span>
             </Link>
             
             <div className="relative">
@@ -105,10 +105,13 @@ function DashboardNav() {
                       <p className="text-xs text-stone-500 truncate">{user?.email}</p>
                     </div>
                     <div className="p-1">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition-colors">
+                      <Link 
+                        href="/settings"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition-colors"
+                      >
                         <Settings className="w-4 h-4" />
                         Settings
-                      </button>
+                      </Link>
                       <button 
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -214,35 +217,6 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         )}
       </div>
     </div>
-  );
-}
-
-function NewProjectCard() {
-  const cardRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    gsap.fromTo(cardRef.current,
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-    );
-  }, []);
-
-  return (
-    <Link ref={cardRef} href="/dashboard/new">
-      <div className="h-full min-h-[200px] border-2 border-dashed border-stone-200 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-stone-300 hover:bg-stone-50/50 transition-all group">
-        <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
-          <Plus className="w-6 h-6 text-stone-500 group-hover:text-stone-700 transition-colors" />
-        </div>
-        <div className="text-center">
-          <span className="text-stone-600 text-sm font-medium group-hover:text-stone-900 transition-colors block">
-            New Project
-          </span>
-          <span className="text-stone-400 text-xs mt-0.5 block">
-            Start from scratch
-          </span>
-        </div>
-      </div>
-    </Link>
   );
 }
 
@@ -362,14 +336,6 @@ export default function DashboardPage() {
                   <List className="w-4 h-4" />
                 </button>
               </div>
-              
-              <Link
-                href="/dashboard/new"
-                className="sm:hidden flex items-center gap-2 px-3 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                New
-              </Link>
             </div>
           </div>
 
@@ -392,9 +358,8 @@ export default function DashboardPage() {
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <NewProjectCard />
               {filteredProjects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index + 1} />
+                <ProjectCard key={project.id} project={project} index={index} />
               ))}
             </div>
           ) : (
