@@ -82,6 +82,12 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  a, button, [role="button"], input[type="submit"], input[type="button"], select, label[for] {
+    cursor: pointer;
+  }
+  a:not([disabled]), button:not([disabled]) {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {

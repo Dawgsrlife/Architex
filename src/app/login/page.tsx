@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { Github } from "lucide-react";
+import { Github, ArrowLeft } from "lucide-react";
 import gsap from "gsap";
 
 export default function LoginPage() {
@@ -33,31 +33,39 @@ export default function LoginPage() {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover opacity-30 grayscale"
+          className="w-full h-full object-cover opacity-20 grayscale"
         >
           <source src="/assets/14471955_3840_2160_30fps.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/50 via-stone-950/70 to-stone-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/60 via-stone-950/80 to-stone-950" />
+      </div>
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-stone-700/10 rounded-full blur-3xl" />
       </div>
 
       <Link
         href="/"
-        className="absolute top-8 left-8 z-20 text-sm font-display font-bold tracking-tight text-white hover:text-stone-300 transition-colors"
+        className="absolute top-8 left-8 z-20 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"
       >
-        Architex
+        <ArrowLeft className="w-4 h-4" />
+        <span className="text-sm font-display font-bold tracking-tight text-white">
+          Architex
+        </span>
       </Link>
 
       <div ref={cardRef} className="relative z-10 w-full max-w-md mx-4">
         <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-stone-700/20 via-stone-600/10 to-stone-700/20 rounded-3xl blur-xl" />
+          <div className="absolute -inset-1 bg-gradient-to-r from-stone-700/10 via-stone-600/5 to-stone-700/10 rounded-3xl blur-xl" />
           
-          <div className="relative bg-stone-900/80 backdrop-blur-2xl border border-stone-800/50 rounded-2xl p-10">
+          <div className="relative bg-stone-900/60 backdrop-blur-2xl border border-stone-800/40 rounded-2xl p-10">
             <div className="text-center mb-10">
               <h1 className="text-3xl font-display font-medium tracking-tight text-white mb-3">
                 Welcome back
               </h1>
               <p className="text-stone-400 text-sm">
-                Sign in to continue architecting
+                Sign in to continue building
               </p>
             </div>
 
@@ -73,9 +81,9 @@ export default function LoginPage() {
             </button>
 
             <div className="mt-8 flex items-center gap-4">
-              <div className="flex-1 h-px bg-stone-800" />
+              <div className="flex-1 h-px bg-stone-800/60" />
               <span className="text-xs text-stone-600 uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px bg-stone-800" />
+              <div className="flex-1 h-px bg-stone-800/60" />
             </div>
 
             <div className="mt-8 space-y-3">
@@ -83,11 +91,11 @@ export default function LoginPage() {
                 type="email"
                 placeholder="Email address"
                 disabled
-                className="w-full h-12 px-4 bg-stone-800/50 border border-stone-700/50 rounded-xl text-white placeholder-stone-500 text-sm focus:outline-none focus:border-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 px-4 bg-stone-800/30 border border-stone-700/30 rounded-xl text-white placeholder-stone-500 text-sm focus:outline-none focus:border-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 disabled
-                className="w-full h-12 bg-stone-800/50 border border-stone-700/50 rounded-xl text-stone-500 text-sm font-medium cursor-not-allowed"
+                className="w-full h-12 bg-stone-800/30 border border-stone-700/30 rounded-xl text-stone-500 text-sm font-medium cursor-not-allowed"
               >
                 Coming soon
               </button>
@@ -109,14 +117,12 @@ export default function LoginPage() {
         <div className="mt-8 text-center">
           <p className="text-stone-500 text-sm">
             New to Architex?{" "}
-            <Link href="/" className="text-white hover:text-stone-300 transition-colors font-medium">
+            <Link href="/learn-more" className="text-white hover:text-stone-300 transition-colors font-medium">
               Learn more
             </Link>
           </p>
         </div>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-stone-950 to-transparent pointer-events-none" />
     </div>
   );
 }
