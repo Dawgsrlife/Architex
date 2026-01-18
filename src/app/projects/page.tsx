@@ -219,11 +219,12 @@ export default function ProjectsPage() {
   const [filter, setFilter] = useState<"all" | "active" | "draft" | "archived">("all");
   const headerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isAuthenticated, isLoading, router]);
+  // TODO: Re-enable auth redirect after dev
+  // useEffect(() => {
+  //   if (!isLoading && !isAuthenticated) {
+  //     router.replace("/login");
+  //   }
+  // }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -234,17 +235,18 @@ export default function ProjectsPage() {
     }
   }, [isAuthenticated]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-stone-600 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
+  // TODO: Re-enable auth check after dev
+  // if (isLoading) {
+  //   return (
+  //     <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+  //       <div className="w-8 h-8 border-2 border-stone-600 border-t-white rounded-full animate-spin" />
+  //     </div>
+  //   );
+  // }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // if (!isAuthenticated) {
+  //   return null;
+  // }
 
   const filteredProjects = mockProjects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

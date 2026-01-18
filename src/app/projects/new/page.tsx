@@ -15,18 +15,20 @@ export default function NewProjectPage() {
     useEffect(() => {
       if (isLoading) return;
 
-      if (!isAuthenticated) {
-        localStorage.setItem("redirect_after_login", "/projects");
-        router.replace("/login");
-        return;
-      }
+      // TODO: Re-enable auth redirect after dev
+      // if (!isAuthenticated) {
+      //   localStorage.setItem("redirect_after_login", "/projects");
+      //   router.replace("/login");
+      //   return;
+      // }
 
       clearCanvas();
       setIsInitialized(true);
       router.replace("/workflow");
     }, [isAuthenticated, isLoading, clearCanvas, router]);
 
-  if (isLoading || !isAuthenticated || !isInitialized) {
+  // TODO: Re-enable auth check after dev
+  if (isLoading || !isInitialized) {
     return null;
   }
 
