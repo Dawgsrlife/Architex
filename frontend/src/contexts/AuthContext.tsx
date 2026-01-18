@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 
-const DEV_BYPASS_AUTH = true; // Enabled for development
+const DEV_BYPASS_AUTH = false; // Enabled for development
 
 interface User {
   id: string;
