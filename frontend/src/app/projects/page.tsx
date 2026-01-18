@@ -17,7 +17,10 @@ import {
   ExternalLink,
   LogOut,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Layers,
+  Zap,
+  ArrowRight
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -49,22 +52,19 @@ function ProjectsNav() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-stone-950/80 backdrop-blur-xl border-b border-stone-800/50">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-stone-950/90 backdrop-blur-xl border-b border-stone-800/30">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
-            <Link href="/" className="text-sm font-display font-bold tracking-tight text-white">
+            <Link href="/" className="text-lg font-display font-bold tracking-tight text-white cursor-pointer">
               Architex
             </Link>
             <div className="hidden md:flex items-center gap-1">
-              <Link href="/projects" className="px-4 py-2 text-sm text-white font-medium">
+              <Link href="/projects" className="px-4 py-2 text-sm text-white font-medium cursor-pointer">
                 Projects
               </Link>
-              <Link href="/projects" className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors">
-                Templates
-              </Link>
-              <Link href="/projects" className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors">
-                Settings
+              <Link href="/learn-more" className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors cursor-pointer">
+                Docs
               </Link>
             </div>
           </div>
@@ -72,7 +72,7 @@ function ProjectsNav() {
           <div className="flex items-center gap-4">
             <Link 
               href="/projects/new"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-stone-950 rounded-lg text-sm font-medium hover:bg-stone-100 transition-colors"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               New Project
@@ -81,7 +81,7 @@ function ProjectsNav() {
             <div className="relative">
               <button 
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-stone-800/50 transition-colors"
+                className="flex items-center gap-2 p-1.5 rounded-full hover:bg-stone-800/50 transition-colors cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stone-600 to-stone-800 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                   {user?.avatarUrl ? (
@@ -96,19 +96,19 @@ function ProjectsNav() {
               {userMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-stone-900 border border-stone-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-stone-900 border border-stone-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
                     <div className="p-3 border-b border-stone-800">
                       <p className="text-sm font-medium text-white">{user?.name || "User"}</p>
-                      <p className="text-xs text-stone-400 truncate">{user?.email}</p>
+                      <p className="text-xs text-stone-500 truncate">{user?.email}</p>
                     </div>
                     <div className="p-1">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 rounded-lg transition-colors">
+                      <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer">
                         <Settings className="w-4 h-4" />
                         Settings
                       </button>
                       <button 
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-stone-800 rounded-lg transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign out
@@ -131,58 +131,67 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 
   useEffect(() => {
     gsap.fromTo(cardRef.current,
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.5, delay: index * 0.05, ease: "power2.out" }
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, delay: index * 0.08, ease: "power3.out" }
     );
   }, [index]);
 
-  const statusColors = {
-    active: "bg-emerald-500/20 text-emerald-400",
-    draft: "bg-stone-500/20 text-stone-400",
-    archived: "bg-stone-700/20 text-stone-500",
+  const statusConfig = {
+    active: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
+    draft: { bg: "bg-amber-500/10", text: "text-amber-400", dot: "bg-amber-400" },
+    archived: { bg: "bg-stone-500/10", text: "text-stone-500", dot: "bg-stone-500" },
   };
+
+  const status = statusConfig[project.status];
 
   return (
     <div ref={cardRef} className="group relative">
-      <Link href={`/projects/${project.id}`}>
-        <div className="relative bg-stone-900/50 border border-stone-800/50 rounded-xl p-5 hover:border-stone-700/50 hover:bg-stone-900/80 transition-all duration-300 cursor-pointer">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-10 h-10 rounded-lg bg-stone-800 flex items-center justify-center">
-              <FolderOpen className="w-5 h-5 text-stone-400" />
-            </div>
-            <span className={`text-xs px-2 py-1 rounded-full ${statusColors[project.status]}`}>
-              {project.status}
-            </span>
-          </div>
+      <Link href={`/projects/${project.id}`} className="cursor-pointer">
+        <div className="relative bg-stone-900/40 border border-stone-800/40 rounded-2xl p-6 hover:border-stone-700/60 hover:bg-stone-900/60 transition-all duration-300">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           
-          <h3 className="text-white font-medium mb-1 group-hover:text-stone-100 transition-colors">
-            {project.name}
-          </h3>
-          <p className="text-stone-500 text-sm line-clamp-2 mb-4">
-            {project.description}
-          </p>
-          
-          <div className="flex items-center justify-between text-xs text-stone-500">
-            <div className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {project.updatedAt}
+          <div className="relative">
+            <div className="flex items-start justify-between mb-5">
+              <div className="w-11 h-11 rounded-xl bg-stone-800/80 flex items-center justify-center group-hover:bg-stone-800 transition-colors">
+                <Layers className="w-5 h-5 text-stone-400 group-hover:text-white transition-colors" />
+              </div>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${status.bg}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                <span className={`text-xs font-medium ${status.text}`}>
+                  {project.status}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Grid3X3 className="w-3.5 h-3.5" />
-              {project.nodesCount} nodes
+            
+            <h3 className="text-white font-medium text-lg mb-2 group-hover:text-stone-100 transition-colors">
+              {project.name}
+            </h3>
+            <p className="text-stone-500 text-sm line-clamp-2 mb-5 leading-relaxed">
+              {project.description}
+            </p>
+            
+            <div className="flex items-center justify-between text-xs text-stone-500">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                {project.updatedAt}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Grid3X3 className="w-3.5 h-3.5" />
+                {project.nodesCount} nodes
+              </div>
             </div>
           </div>
         </div>
       </Link>
       
-      <div className="absolute top-3 right-3 z-10">
+      <div className="absolute top-4 right-4 z-10">
         <button 
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setMenuOpen(!menuOpen);
           }}
-          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-stone-700/50 transition-all"
+          className="p-2 rounded-xl opacity-0 group-hover:opacity-100 hover:bg-stone-800/80 transition-all cursor-pointer"
         >
           <MoreHorizontal className="w-4 h-4 text-stone-400" />
         </button>
@@ -190,16 +199,17 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-0 top-full mt-1 w-40 bg-stone-900 border border-stone-800 rounded-lg shadow-xl z-50 overflow-hidden">
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 transition-colors">
+            <div className="absolute right-0 top-full mt-1 w-44 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+              <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-300 hover:bg-stone-800 transition-colors cursor-pointer">
                 <ExternalLink className="w-4 h-4" />
                 Open
               </button>
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 transition-colors">
+              <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-300 hover:bg-stone-800 transition-colors cursor-pointer">
                 <Copy className="w-4 h-4" />
                 Duplicate
               </button>
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-stone-800 transition-colors">
+              <div className="h-px bg-stone-800 my-1" />
+              <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-stone-800 transition-colors cursor-pointer">
                 <Trash2 className="w-4 h-4" />
                 Delete
               </button>
@@ -211,6 +221,35 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
   );
 }
 
+function NewProjectCard() {
+  const cardRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    gsap.fromTo(cardRef.current,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }
+    );
+  }, []);
+
+  return (
+    <Link ref={cardRef} href="/projects/new" className="cursor-pointer">
+      <div className="h-full min-h-[240px] border-2 border-dashed border-stone-800/60 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-stone-600 hover:bg-stone-900/30 transition-all group">
+        <div className="w-14 h-14 rounded-2xl bg-stone-900 flex items-center justify-center group-hover:bg-stone-800 group-hover:scale-105 transition-all">
+          <Plus className="w-7 h-7 text-stone-500 group-hover:text-white transition-colors" />
+        </div>
+        <div className="text-center">
+          <span className="text-stone-400 text-sm font-medium group-hover:text-white transition-colors block">
+            New Project
+          </span>
+          <span className="text-stone-600 text-xs mt-1 block">
+            Start from scratch
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function ProjectsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
@@ -218,33 +257,18 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "draft" | "archived">("all");
   const headerRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      gsap.fromTo(headerRef.current,
-        { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
-      );
-    }
-  }, [isAuthenticated]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-stone-600 border-t-white rounded-full animate-spin" />
-      </div>
+    gsap.fromTo(headerRef.current,
+      { opacity: 0, y: -30 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
+    gsap.fromTo(statsRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, delay: 0.2, ease: "power3.out" }
+    );
+  }, []);
 
   const filteredProjects = mockProjects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -253,43 +277,75 @@ export default function ProjectsPage() {
     return matchesSearch && matchesFilter;
   });
 
+  const stats = {
+    total: mockProjects.length,
+    active: mockProjects.filter(p => p.status === "active").length,
+    draft: mockProjects.filter(p => p.status === "draft").length,
+  };
+
   return (
     <div className="min-h-screen bg-stone-950">
       <ProjectsNav />
       
-      <main className="pt-24 pb-16 px-6 lg:px-8">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-stone-800/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-stone-700/10 rounded-full blur-3xl" />
+      </div>
+      
+      <main className="relative pt-28 pb-16 px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div ref={headerRef} className="mb-8">
-            <h1 className="text-3xl font-display font-medium tracking-tight text-white mb-2">
-              Your Projects
-            </h1>
-            <p className="text-stone-400">
-              Create, manage, and deploy your architecture designs
-            </p>
+          <div ref={headerRef} className="mb-10">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+              <div>
+                <h1 className="text-4xl lg:text-5xl font-display font-medium tracking-tight text-white mb-3">
+                  Your Projects
+                </h1>
+                <p className="text-stone-400 text-lg">
+                  Design, iterate, and deploy your system architectures
+                </p>
+              </div>
+              
+              <div ref={statsRef} className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-display font-medium text-white">{stats.total}</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Total</p>
+                </div>
+                <div className="w-px h-10 bg-stone-800" />
+                <div className="text-center">
+                  <p className="text-2xl font-display font-medium text-emerald-400">{stats.active}</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Active</p>
+                </div>
+                <div className="w-px h-10 bg-stone-800" />
+                <div className="text-center">
+                  <p className="text-2xl font-display font-medium text-amber-400">{stats.draft}</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Drafts</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
                 <input
                   type="text"
                   placeholder="Search projects..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-stone-900/50 border border-stone-800/50 rounded-lg text-white placeholder-stone-500 text-sm focus:outline-none focus:border-stone-700 transition-colors"
+                  className="w-full sm:w-72 pl-11 pr-4 py-3 bg-stone-900/50 border border-stone-800/50 rounded-xl text-white placeholder-stone-500 text-sm focus:outline-none focus:border-stone-700 focus:bg-stone-900/80 transition-all"
                 />
               </div>
               
-              <div className="flex items-center gap-1 p-1 bg-stone-900/50 border border-stone-800/50 rounded-lg">
+              <div className="hidden sm:flex items-center gap-1 p-1 bg-stone-900/50 border border-stone-800/50 rounded-xl">
                 {(["all", "active", "draft", "archived"] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
+                    className={`px-4 py-2 text-xs font-medium rounded-lg transition-all capitalize cursor-pointer ${
                       filter === f 
-                        ? "bg-stone-800 text-white" 
-                        : "text-stone-400 hover:text-white"
+                        ? "bg-white text-stone-950" 
+                        : "text-stone-400 hover:text-white hover:bg-stone-800/50"
                     }`}
                   >
                     {f}
@@ -299,19 +355,19 @@ export default function ProjectsPage() {
             </div>
             
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 p-1 bg-stone-900/50 border border-stone-800/50 rounded-lg">
+              <div className="flex items-center gap-1 p-1 bg-stone-900/50 border border-stone-800/50 rounded-xl">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-md transition-colors ${
-                    viewMode === "grid" ? "bg-stone-800 text-white" : "text-stone-400 hover:text-white"
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${
+                    viewMode === "grid" ? "bg-white text-stone-950" : "text-stone-400 hover:text-white"
                   }`}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-md transition-colors ${
-                    viewMode === "list" ? "bg-stone-800 text-white" : "text-stone-400 hover:text-white"
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${
+                    viewMode === "list" ? "bg-white text-stone-950" : "text-stone-400 hover:text-white"
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -320,7 +376,7 @@ export default function ProjectsPage() {
               
               <Link
                 href="/projects/new"
-                className="sm:hidden flex items-center gap-2 px-4 py-2.5 bg-white text-stone-950 rounded-lg text-sm font-medium"
+                className="sm:hidden flex items-center gap-2 px-4 py-2.5 bg-white text-stone-950 rounded-xl text-sm font-medium cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 New
@@ -329,67 +385,71 @@ export default function ProjectsPage() {
           </div>
 
           {filteredProjects.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-stone-900 flex items-center justify-center">
-                <FolderOpen className="w-8 h-8 text-stone-600" />
+            <div className="text-center py-20">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-stone-900 flex items-center justify-center">
+                <FolderOpen className="w-10 h-10 text-stone-700" />
               </div>
-              <h3 className="text-white font-medium mb-2">No projects found</h3>
-              <p className="text-stone-500 text-sm mb-6">
-                {searchQuery ? "Try adjusting your search or filters" : "Create your first project to get started"}
+              <h3 className="text-white font-medium text-xl mb-2">No projects found</h3>
+              <p className="text-stone-500 text-sm mb-8 max-w-sm mx-auto">
+                {searchQuery ? "Try adjusting your search or filters" : "Create your first project to start designing your architecture"}
               </p>
               <Link
                 href="/projects/new"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-stone-950 rounded-lg text-sm font-medium hover:bg-stone-100 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
+                <Zap className="w-4 h-4" />
                 Create Project
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Link href="/projects/new">
-                <div className="h-full min-h-[200px] border-2 border-dashed border-stone-800 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-stone-700 hover:bg-stone-900/30 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-full bg-stone-900 flex items-center justify-center group-hover:bg-stone-800 transition-colors">
-                    <Plus className="w-6 h-6 text-stone-500 group-hover:text-white transition-colors" />
-                  </div>
-                  <span className="text-stone-500 text-sm font-medium group-hover:text-white transition-colors">
-                    New Project
-                  </span>
-                </div>
-              </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <NewProjectCard />
               {filteredProjects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index} />
+                <ProjectCard key={project.id} project={project} index={index + 1} />
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {filteredProjects.map((project) => (
-                <Link key={project.id} href={`/projects/${project.id}`}>
-                  <div className="flex items-center gap-4 p-4 bg-stone-900/50 border border-stone-800/50 rounded-xl hover:border-stone-700/50 hover:bg-stone-900/80 transition-all cursor-pointer">
-                    <div className="w-10 h-10 rounded-lg bg-stone-800 flex items-center justify-center flex-shrink-0">
-                      <FolderOpen className="w-5 h-5 text-stone-400" />
+                <Link key={project.id} href={`/projects/${project.id}`} className="cursor-pointer block">
+                  <div className="flex items-center gap-5 p-5 bg-stone-900/40 border border-stone-800/40 rounded-2xl hover:border-stone-700/60 hover:bg-stone-900/60 transition-all group">
+                    <div className="w-12 h-12 rounded-xl bg-stone-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-stone-800 transition-colors">
+                      <Layers className="w-5 h-5 text-stone-400 group-hover:text-white transition-colors" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-medium truncate">{project.name}</h3>
+                      <h3 className="text-white font-medium truncate group-hover:text-stone-100 transition-colors">{project.name}</h3>
                       <p className="text-stone-500 text-sm truncate">{project.description}</p>
                     </div>
-                    <div className="hidden sm:flex items-center gap-6 text-xs text-stone-500">
-                      <div className="flex items-center gap-1">
+                    <div className="hidden sm:flex items-center gap-8 text-xs text-stone-500">
+                      <div className="flex items-center gap-1.5">
                         <Grid3X3 className="w-3.5 h-3.5" />
                         {project.nodesCount} nodes
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
                         {project.updatedAt}
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                      project.status === "active" ? "bg-emerald-500/20 text-emerald-400" :
-                      project.status === "draft" ? "bg-stone-500/20 text-stone-400" :
-                      "bg-stone-700/20 text-stone-500"
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0 ${
+                      project.status === "active" ? "bg-emerald-500/10" :
+                      project.status === "draft" ? "bg-amber-500/10" :
+                      "bg-stone-500/10"
                     }`}>
-                      {project.status}
-                    </span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        project.status === "active" ? "bg-emerald-400" :
+                        project.status === "draft" ? "bg-amber-400" :
+                        "bg-stone-500"
+                      }`} />
+                      <span className={`text-xs font-medium ${
+                        project.status === "active" ? "text-emerald-400" :
+                        project.status === "draft" ? "text-amber-400" :
+                        "text-stone-500"
+                      }`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-stone-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </div>
                 </Link>
               ))}

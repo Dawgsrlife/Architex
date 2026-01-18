@@ -8,6 +8,8 @@ import {
   ReactNode,
 } from "react";
 
+const DEV_BYPASS_AUTH = true; // Enabled for development
+
 interface User {
   id: string;
   email: string;
@@ -27,11 +29,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEV_USER: User = {
+  id: "dev-user-123",
+  email: "dev@architex.app",
+  name: "Dev User",
+  avatarUrl: "https://i.pravatar.cc/150?u=dev",
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = async () => {
+    if (DEV_BYPASS_AUTH) {
+      setUser(DEV_USER);
+      return;
+    }
     try {
       const token = localStorage.getItem("access_token");
       if (!token) {
@@ -52,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user || data);
       } else {
-        // Token invalid, clear it
         localStorage.removeItem("access_token");
         setUser(null);
       }
@@ -65,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       setIsLoading(true);
+      if (DEV_BYPASS_AUTH) {
+        setUser(DEV_USER);
+        setIsLoading(false);
+        return;
+      }
       await refreshUser();
       setIsLoading(false);
     };
@@ -92,12 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGitHub = async () => {
-    // Redirect to GitHub OAuth
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    const scope = "read:user user:email repo";
-
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/github`;
   };
 
   const logout = async () => {

@@ -22,11 +22,20 @@ export interface ArchitectureNodeData extends Record<string, unknown> {
 
 export type ArchitectureNode = Node<ArchitectureNodeData>;
 
+interface HistoryState {
+  nodes: ArchitectureNode[];
+  edges: Edge[];
+}
+
 export interface ArchitectureStore {
   nodes: ArchitectureNode[];
   edges: Edge[];
   projectName: string;
   projectId: string | null;
+  
+  history: HistoryState[];
+  historyIndex: number;
+  isHistoryInitialized: boolean;
 
   onNodesChange: OnNodesChange<ArchitectureNode>;
   onEdgesChange: OnEdgesChange;
@@ -38,7 +47,16 @@ export interface ArchitectureStore {
   setProjectName: (name: string) => void;
   setProjectId: (id: string | null) => void;
   clearCanvas: () => void;
+  
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  pushHistory: () => void;
+  initHistory: () => void;
 }
+
+const MAX_HISTORY = 50;
 
 export const useArchitectureStore = create<ArchitectureStore>()(
   persist(
@@ -47,22 +65,98 @@ export const useArchitectureStore = create<ArchitectureStore>()(
       edges: [],
       projectName: "Untitled Project",
       projectId: null,
+      history: [],
+      historyIndex: -1,
+      isHistoryInitialized: false,
 
-      onNodesChange: (changes) => {
+      initHistory: () => {
+        const { nodes, edges, isHistoryInitialized } = get();
+        if (isHistoryInitialized) return;
         set({
-          nodes: applyNodeChanges(changes, get().nodes) as ArchitectureNode[],
+          history: [{ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }],
+          historyIndex: 0,
+          isHistoryInitialized: true,
         });
       },
 
+      pushHistory: () => {
+        const { nodes, edges, history, historyIndex } = get();
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push({ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) });
+        
+        if (newHistory.length > MAX_HISTORY) {
+          newHistory.shift();
+        }
+        
+        set({
+          history: newHistory,
+          historyIndex: newHistory.length - 1,
+        });
+      },
+
+      undo: () => {
+        const { history, historyIndex, nodes, edges } = get();
+        if (historyIndex <= 0) return;
+        
+        const currentHistory = [...history];
+        currentHistory[historyIndex] = { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) };
+        
+        const prevState = currentHistory[historyIndex - 1];
+        set({
+          history: currentHistory,
+          nodes: JSON.parse(JSON.stringify(prevState.nodes)),
+          edges: JSON.parse(JSON.stringify(prevState.edges)),
+          historyIndex: historyIndex - 1,
+        });
+      },
+
+      redo: () => {
+        const { history, historyIndex } = get();
+        if (historyIndex >= history.length - 1) return;
+        
+        const nextState = history[historyIndex + 1];
+        set({
+          nodes: JSON.parse(JSON.stringify(nextState.nodes)),
+          edges: JSON.parse(JSON.stringify(nextState.edges)),
+          historyIndex: historyIndex + 1,
+        });
+      },
+
+      canUndo: () => get().historyIndex > 0,
+      canRedo: () => get().historyIndex < get().history.length - 1,
+
+      onNodesChange: (changes) => {
+        const hasSignificantChange = changes.some(
+          (c) => c.type === "remove" || c.type === "add"
+        );
+        
+        set({
+          nodes: applyNodeChanges(changes, get().nodes) as ArchitectureNode[],
+        });
+        
+        if (hasSignificantChange) {
+          get().pushHistory();
+        }
+      },
+
       onEdgesChange: (changes) => {
+        const hasSignificantChange = changes.some(
+          (c) => c.type === "remove" || c.type === "add"
+        );
+        
         set({
           edges: applyEdgeChanges(changes, get().edges),
         });
+        
+        if (hasSignificantChange) {
+          get().pushHistory();
+        }
       },
 
       onConnect: (connection: Connection) => {
         const { edges } = get();
 
+        if (!connection.source || !connection.target) return;
         if (connection.source === connection.target) return;
 
         const existingEdge = edges.find(
@@ -78,12 +172,14 @@ export const useArchitectureStore = create<ArchitectureStore>()(
         set({
           edges: addEdge(connection, edges),
         });
+        get().pushHistory();
       },
 
       addNode: (node: ArchitectureNode) => {
         set({
           nodes: [...get().nodes, node],
         });
+        get().pushHistory();
       },
 
       deleteNode: (id: string) => {
@@ -93,6 +189,7 @@ export const useArchitectureStore = create<ArchitectureStore>()(
             (edge) => edge.source !== id && edge.target !== id
           ),
         });
+        get().pushHistory();
       },
 
       setNodes: (nodes: ArchitectureNode[]) => {
@@ -117,6 +214,9 @@ export const useArchitectureStore = create<ArchitectureStore>()(
           edges: [],
           projectName: "Untitled Project",
           projectId: null,
+          history: [{ nodes: [], edges: [] }],
+          historyIndex: 0,
+          isHistoryInitialized: true,
         });
       },
     }),

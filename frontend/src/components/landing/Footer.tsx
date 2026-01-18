@@ -15,7 +15,7 @@ export function Footer() {
           <div className="flex flex-wrap items-center gap-x-12 gap-y-4">
             <a href="#work" className="text-[11px] text-stone-500 hover:text-stone-900 transition-colors tracking-widest uppercase font-medium">Work</a>
             <a href="#process" className="text-[11px] text-stone-500 hover:text-stone-900 transition-colors tracking-widest uppercase font-medium">Process</a>
-            <Link href="/auth" className="text-[11px] text-stone-500 hover:text-stone-900 transition-colors tracking-widest uppercase font-medium">Sign in</Link>
+            <Link href="/login" className="text-[11px] text-stone-500 hover:text-stone-900 transition-colors tracking-widest uppercase font-medium">Sign in</Link>
           </div>
         </div>
       </div>

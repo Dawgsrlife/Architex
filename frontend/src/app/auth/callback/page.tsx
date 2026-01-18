@@ -16,7 +16,7 @@ function AuthCallbackContent() {
       const redirectPath = localStorage.getItem("redirect_after_login");
       localStorage.removeItem("redirect_after_login");
       
-      router.push(redirectPath || "/projects");
+      router.push(redirectPath || "/dashboard");
     } else {
       router.push("/");
     }
