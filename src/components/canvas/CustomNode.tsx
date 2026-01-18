@@ -25,6 +25,14 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
   };
 
+  const handleStyle = {
+    width: 12,
+    height: 12,
+    border: `2px solid ${data.color}`,
+    backgroundColor: "white",
+    cursor: "crosshair",
+  };
+
   return (
     <div
       className={`
@@ -51,40 +59,16 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
 
       <Handle
         id="top"
-        type="source"
-        position={Position.Top}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, top: -6 }}
-      />
-      <Handle
-        id="top-target"
         type="target"
         position={Position.Top}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, top: -6 }}
+        style={{ ...handleStyle, top: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
 
       <Handle
         id="left"
-        type="source"
-        position={Position.Left}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, left: -6 }}
-      />
-      <Handle
-        id="left-target"
         type="target"
         position={Position.Left}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, left: -6 }}
+        style={{ ...handleStyle, left: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
 
       <div className="flex items-center gap-3">
@@ -115,38 +99,14 @@ function CustomNode({ data, selected, id }: NodeProps<Node<ArchitectureNodeData>
         id="bottom"
         type="source"
         position={Position.Bottom}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, bottom: -6 }}
-      />
-      <Handle
-        id="bottom-target"
-        type="target"
-        position={Position.Bottom}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, bottom: -6 }}
+        style={{ ...handleStyle, bottom: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
 
       <Handle
         id="right"
         type="source"
         position={Position.Right}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, right: -6 }}
-      />
-      <Handle
-        id="right-target"
-        type="target"
-        position={Position.Right}
-        className={`!w-3 !h-3 !border-2 !bg-white transition-opacity ${
-          isHovered || selected ? "!opacity-100" : "!opacity-0"
-        }`}
-        style={{ borderColor: data.color, right: -6 }}
+        style={{ ...handleStyle, right: -6, opacity: isHovered || selected ? 1 : 0, transition: "opacity 0.2s" }}
       />
     </div>
   );

@@ -95,15 +95,15 @@ export default function ProjectEditorPage() {
   const [generatedLinks, setGeneratedLinks] = useState<{github?: string; vercel?: string} | null>(null);
   const [rightPanel, setRightPanel] = useState<"chat" | null>(null);
   
-  const { nodes, edges, setProjectName: setStoreName, setProjectId, clearCanvas, undo, redo, canUndo, canRedo, pushHistory } = useArchitectureStore();
+  const { nodes, edges, setProjectName: setStoreName, setProjectId, clearCanvas, undo, redo, canUndo, canRedo } = useArchitectureStore();
 
   useEffect(() => { if (!authLoading && !isAuthenticated) router.replace("/login"); }, [isAuthenticated, authLoading, router]);
 
   useEffect(() => {
-    if (projectId === "new") { clearCanvas(); setProjectName("Untitled"); setStoreName("Untitled"); setProjectId(null); pushHistory(); }
+    if (projectId === "new") { clearCanvas(); setProjectName("Untitled"); setStoreName("Untitled"); setProjectId(null); }
     else { setProjectId(projectId); setProjectName(`Project ${projectId}`); setStoreName(`Project ${projectId}`); }
     setLoading(false);
-  }, [projectId, clearCanvas, setStoreName, setProjectId, pushHistory]);
+  }, [projectId, clearCanvas, setStoreName, setProjectId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
