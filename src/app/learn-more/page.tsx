@@ -8,7 +8,6 @@ import {
   ArrowLeft, 
   ArrowRight,
   Layers, 
-  Sparkles, 
   Code2, 
   GitBranch, 
   Zap, 
@@ -18,31 +17,31 @@ import {
   Database,
   Cloud,
   Terminal,
-  Box
+  Play
 } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 function Navbar() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-stone-950/90 backdrop-blur-xl border-b border-stone-800/30">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-stone-200/60">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
-            <Link href="/" className="text-lg font-display font-bold tracking-tight text-white cursor-pointer">
+            <Link href="/" className="text-lg font-display font-bold tracking-tight text-stone-900">
               Architex
             </Link>
           </div>
           <div className="flex items-center gap-4">
             <Link 
               href="/login"
-              className="text-sm text-stone-400 hover:text-white transition-colors cursor-pointer"
+              className="text-sm text-stone-500 hover:text-stone-900 transition-colors"
             >
               Sign in
             </Link>
             <Link 
               href="/projects/new"
-              className="px-4 py-2 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
+              className="px-4 py-2 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
             >
               Get Started
             </Link>
@@ -67,37 +66,32 @@ function HeroSection() {
   }, []);
 
   return (
-    <section ref={heroRef} className="relative pt-32 pb-20 bg-stone-950">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-1/4 w-64 h-64 bg-stone-700/10 rounded-full blur-3xl" />
-      </div>
-
+    <section ref={heroRef} className="relative pt-32 pb-20 bg-white">
       <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
-        <Link href="/" className="hero-content inline-flex items-center gap-2 text-stone-400 hover:text-white transition-colors mb-8 cursor-pointer">
+        <Link href="/" className="hero-content inline-flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back to home</span>
         </Link>
 
-        <h1 className="hero-content text-5xl lg:text-7xl font-display font-medium tracking-tight text-white mb-6">
+        <h1 className="hero-content text-5xl lg:text-7xl font-display font-medium tracking-tight text-stone-900 mb-6">
           What is Architex?
         </h1>
         
-        <p className="hero-content text-xl lg:text-2xl text-stone-400 max-w-3xl leading-relaxed mb-10">
-          Architex is an AI-powered platform that transforms visual system designs into production-ready code. Design your architecture visually, and let AI handle the implementation.
+        <p className="hero-content text-xl lg:text-2xl text-stone-500 max-w-3xl leading-relaxed mb-10">
+          Architex is a platform that transforms visual system designs into production-ready code. Design your architecture visually, and we handle the implementation.
         </p>
 
         <div className="hero-content flex flex-wrap gap-4">
           <Link 
             href="/projects/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
           >
             Start Building
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a 
             href="#how-it-works"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-stone-800 text-white rounded-full text-sm font-medium hover:bg-stone-900 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-3 border border-stone-200 text-stone-900 rounded-full text-sm font-medium hover:bg-stone-50 transition-all"
           >
             How it works
           </a>
@@ -115,9 +109,9 @@ function FeaturesSection() {
       description: "Drag and drop components to design your system architecture. Connect services, databases, and APIs with an intuitive visual interface."
     },
     {
-      icon: Sparkles,
-      title: "AI-Powered Code Generation",
-      description: "Our AI analyzes your architecture and generates production-ready code, including boilerplate, configurations, and best practices."
+      icon: Play,
+      title: "Code Generation",
+      description: "Your architecture is analyzed and transformed into production-ready code, including boilerplate, configurations, and best practices."
     },
     {
       icon: Code2,
@@ -163,24 +157,24 @@ function FeaturesSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 bg-stone-950 border-t border-stone-800/30">
+    <section ref={sectionRef} className="py-24 bg-stone-50 border-t border-stone-200">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-4xl font-display font-medium tracking-tight text-white mb-4">
+          <h2 className="text-3xl lg:text-4xl font-display font-medium tracking-tight text-stone-900 mb-4">
             Everything you need to build faster
           </h2>
-          <p className="text-stone-400 text-lg max-w-2xl mx-auto">
-            Architex combines visual design with AI to accelerate your development workflow.
+          <p className="text-stone-500 text-lg max-w-2xl mx-auto">
+            Architex combines visual design with code generation to accelerate your development workflow.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <div key={index} className="feature-card p-6 bg-stone-900/40 border border-stone-800/40 rounded-2xl hover:border-stone-700/60 transition-all group">
-              <div className="w-12 h-12 rounded-xl bg-stone-800/80 flex items-center justify-center mb-5 group-hover:bg-stone-800 transition-colors">
-                <feature.icon className="w-6 h-6 text-stone-400 group-hover:text-white transition-colors" />
+            <div key={index} className="feature-card p-6 bg-white border border-stone-200 rounded-xl hover:border-stone-300 hover:shadow-sm transition-all group">
+              <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-5 group-hover:bg-stone-200 transition-colors">
+                <feature.icon className="w-6 h-6 text-stone-600" />
               </div>
-              <h3 className="text-white font-medium text-lg mb-2">{feature.title}</h3>
+              <h3 className="text-stone-900 font-medium text-lg mb-2">{feature.title}</h3>
               <p className="text-stone-500 text-sm leading-relaxed">{feature.description}</p>
             </div>
           ))}
@@ -207,8 +201,8 @@ function HowItWorksSection() {
     {
       number: "03",
       title: "Generate Code",
-      description: "Click Generate and watch as AI transforms your visual design into production-ready code. Get complete project structure, configurations, and documentation.",
-      icon: Sparkles
+      description: "Click Generate and watch as your visual design transforms into production-ready code. Get complete project structure, configurations, and documentation.",
+      icon: Play
     },
     {
       number: "04",
@@ -240,29 +234,29 @@ function HowItWorksSection() {
   }, []);
 
   return (
-    <section id="how-it-works" ref={sectionRef} className="py-24 bg-stone-900/30 border-t border-stone-800/30">
+    <section id="how-it-works" ref={sectionRef} className="py-24 bg-white border-t border-stone-200">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-4xl font-display font-medium tracking-tight text-white mb-4">
+          <h2 className="text-3xl lg:text-4xl font-display font-medium tracking-tight text-stone-900 mb-4">
             How Architex Works
           </h2>
-          <p className="text-stone-400 text-lg max-w-2xl mx-auto">
+          <p className="text-stone-500 text-lg max-w-2xl mx-auto">
             From visual design to deployed code in four simple steps.
           </p>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6">
           {steps.map((step, index) => (
-            <div key={index} className="step-item flex items-start gap-6 p-6 bg-stone-950/50 border border-stone-800/40 rounded-2xl hover:border-stone-700/60 transition-all group">
-              <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-stone-800/80 flex items-center justify-center group-hover:bg-stone-800 transition-colors">
-                <step.icon className="w-7 h-7 text-stone-400 group-hover:text-white transition-colors" />
+            <div key={index} className="step-item flex items-start gap-6 p-6 bg-stone-50 border border-stone-200 rounded-xl hover:border-stone-300 transition-all group">
+              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-stone-100 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                <step.icon className="w-6 h-6 text-stone-600" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-xs font-mono text-stone-600">{step.number}</span>
-                  <h3 className="text-white font-medium text-xl">{step.title}</h3>
+                  <span className="text-xs font-mono text-stone-400">{step.number}</span>
+                  <h3 className="text-stone-900 font-medium text-xl">{step.title}</h3>
                 </div>
-                <p className="text-stone-400 leading-relaxed">{step.description}</p>
+                <p className="text-stone-500 leading-relaxed">{step.description}</p>
               </div>
             </div>
           ))}
@@ -281,28 +275,28 @@ function ComponentsSection() {
   ];
 
   return (
-    <section className="py-24 bg-stone-950 border-t border-stone-800/30">
+    <section className="py-24 bg-stone-50 border-t border-stone-200">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-4xl font-display font-medium tracking-tight text-white mb-4">
+          <h2 className="text-3xl lg:text-4xl font-display font-medium tracking-tight text-stone-900 mb-4">
             Supported Components
           </h2>
-          <p className="text-stone-400 text-lg max-w-2xl mx-auto">
+          <p className="text-stone-500 text-lg max-w-2xl mx-auto">
             A growing library of components to build any system architecture.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {components.map((category, index) => (
-            <div key={index} className="p-6 bg-stone-900/40 border border-stone-800/40 rounded-2xl">
-              <div className="w-10 h-10 rounded-xl bg-stone-800/80 flex items-center justify-center mb-4">
-                <category.icon className="w-5 h-5 text-stone-400" />
+            <div key={index} className="p-6 bg-white border border-stone-200 rounded-xl">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center mb-4">
+                <category.icon className="w-5 h-5 text-stone-600" />
               </div>
-              <h3 className="text-white font-medium mb-3">{category.name}</h3>
+              <h3 className="text-stone-900 font-medium mb-3">{category.name}</h3>
               <ul className="space-y-2">
                 {category.items.map((item, i) => (
                   <li key={i} className="text-sm text-stone-500 flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-stone-700" />
+                    <span className="w-1 h-1 rounded-full bg-stone-300" />
                     {item}
                   </li>
                 ))}
@@ -317,25 +311,25 @@ function ComponentsSection() {
 
 function CTASection() {
   return (
-    <section className="py-24 bg-stone-900/30 border-t border-stone-800/30">
+    <section className="py-24 bg-white border-t border-stone-200">
       <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
-        <h2 className="text-3xl lg:text-5xl font-display font-medium tracking-tight text-white mb-6">
+        <h2 className="text-3xl lg:text-5xl font-display font-medium tracking-tight text-stone-900 mb-6">
           Ready to build faster?
         </h2>
-        <p className="text-stone-400 text-lg mb-10 max-w-2xl mx-auto">
+        <p className="text-stone-500 text-lg mb-10 max-w-2xl mx-auto">
           Join developers who are using Architex to design and ship production-ready systems in minutes, not weeks.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link 
             href="/projects/new"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all active:scale-95"
           >
             Start Building Free
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link 
             href="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 border border-stone-800 text-white rounded-full text-sm font-medium hover:bg-stone-900 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-4 border border-stone-200 text-stone-900 rounded-full text-sm font-medium hover:bg-stone-50 transition-all"
           >
             Sign in with GitHub
           </Link>
@@ -347,17 +341,17 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="py-12 bg-stone-950 border-t border-stone-800/30">
+    <footer className="py-12 bg-stone-50 border-t border-stone-200">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-display font-bold text-white">Architex</span>
-            <span className="text-stone-600 text-sm">© 2026</span>
+            <span className="text-lg font-display font-bold text-stone-900">Architex</span>
+            <span className="text-stone-400 text-sm">© 2026</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-stone-500">
-            <a href="#" className="hover:text-white transition-colors cursor-pointer">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors cursor-pointer">Terms</a>
-            <a href="#" className="hover:text-white transition-colors cursor-pointer">GitHub</a>
+            <a href="#" className="hover:text-stone-900 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-stone-900 transition-colors">Terms</a>
+            <a href="#" className="hover:text-stone-900 transition-colors">GitHub</a>
           </div>
         </div>
       </div>
@@ -371,7 +365,7 @@ export default function LearnMorePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-stone-950">
+    <main className="min-h-screen bg-white">
       <Navbar />
       <HeroSection />
       <FeaturesSection />

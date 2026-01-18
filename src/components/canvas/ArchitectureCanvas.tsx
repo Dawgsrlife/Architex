@@ -92,7 +92,7 @@ export default function ArchitectureCanvas() {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        className="bg-stone-950"
+        className="bg-stone-100"
         defaultEdgeOptions={{
           type: "custom",
           animated: true,
@@ -102,19 +102,19 @@ export default function ArchitectureCanvas() {
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1}
-          color="rgba(120, 113, 108, 0.3)"
+          color="rgba(168, 162, 158, 0.5)"
         />
         <Controls
           showInteractive={false}
-          className="!bg-stone-900/80 !border-stone-700 !rounded-xl !shadow-lg [&>button]:!bg-stone-800 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-stone-700 [&>button]:!w-8 [&>button]:!h-8 [&>button]:hover:!bg-stone-700 [&>button]:!text-stone-300"
+          className="!bg-white !border-stone-200 !rounded-xl !shadow-sm [&>button]:!bg-white [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-stone-200 [&>button]:!w-8 [&>button]:!h-8 [&>button]:hover:!bg-stone-50 [&>button]:!text-stone-600"
         />
         <MiniMap
           style={{ height: 100, width: 150 }}
-          className="!bg-stone-900/50 !border-stone-700 !rounded-lg !shadow-lg"
-          maskColor="rgba(0, 0, 0, 0.5)"
+          className="!bg-white/80 !border-stone-200 !rounded-lg !shadow-sm"
+          maskColor="rgba(255, 255, 255, 0.7)"
           nodeColor={(node) => {
             const data = node.data as { color?: string };
-            return data.color ? `${data.color}80` : "#57534e";
+            return data.color ? `${data.color}` : "#a8a29e";
           }}
         />
       </ReactFlow>
