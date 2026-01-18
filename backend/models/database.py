@@ -23,6 +23,8 @@ class ProjectModel(BaseModel):
     name: str
     description: str
     repository_url: Optional[str] = None
+    deployment_url: Optional[str] = None
+    is_public: bool = False
     status: str = "pending"  # pending, running, done, failed
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

@@ -294,6 +294,17 @@ async def github_auth_exchange(request: GitHubAuthRequest):
             "avatar_url": user_data.get("avatar_url", "")
         }}
 
+@app.get("/api/auth/me")
+async def get_current_user_info(user: dict = Depends(get_current_user)):
+    """Get current user information"""
+    return {
+        "id": user["_id"],
+        "username": user["username"],
+        "name": user.get("name", ""),
+        "avatar_url": user.get("avatar_url", ""),
+        "email": user.get("email", "")
+    }
+
 # Project endpoints
 @app.get("/api/projects")
 async def get_projects(user: dict = Depends(get_current_user)):
