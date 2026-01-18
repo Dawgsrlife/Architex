@@ -24,15 +24,17 @@ export function HeroSection() {
   return (
     <section ref={heroRef} className="relative h-screen flex flex-col justify-center bg-stone-950 overflow-hidden">
       <div className="absolute inset-0">
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          className="w-full h-full object-cover opacity-40 grayscale"
-        >
-          <source src="/assets/14471955_3840_2160_30fps.mp4" type="video/mp4" />
-        </video>
+<video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            preload="auto"
+            poster="/assets/hero-poster.jpg"
+            className="w-full h-full object-cover opacity-40 grayscale"
+          >
+            <source src="/assets/14471955_3840_2160_30fps.mp4" type="video/mp4" />
+          </video>
         <div className="absolute inset-0 bg-gradient-to-b from-stone-950/30 via-stone-950/60 to-stone-950" />
       </div>
 
