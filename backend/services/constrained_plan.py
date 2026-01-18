@@ -343,6 +343,9 @@ class GenerationPlanBuilder:
             self._add_nextjs_globals()
             self._add_nextjs_api_client()
             
+            # MANDATORY: Main landing page (implements user intent)
+            self._add_nextjs_landing_page()
+            
             # Auth pages (if needed)
             if self.model.auth_required:
                 self._add_nextjs_auth_pages()
@@ -584,6 +587,47 @@ class GenerationPlanBuilder:
             ],
             must_not_include=["hardcoded URLs"],
         ))
+    
+    def _add_nextjs_landing_page(self):
+        """MANDATORY: Main landing page that implements the user's intent."""
+        # Build feature list from entities
+        features = [entity.plural_name for entity in self.model.entities]
+        if not features:
+            features = ["Core Features", "User Management", "Analytics"]
+        
+        self.files.append(FileInstruction(
+            path="src/app/page.tsx",
+            file_type=FileType.PAGE,
+            purpose=f"Main landing page implementing: {self.model.intent}",
+            must_include=[
+                "export default function HomePage",
+                "Modern Tailwind CSS styling",
+                "'use client' directive if using hooks",
+                "Hero section with title and description",
+                "Feature cards or list section",
+                "Call-to-action button",
+                f"App title: {self.model.app_name}",
+            ],
+            must_not_include=["placeholder text only", "lorem ipsum"],
+        ))
+        
+        # Also add a main feature component if we have entities
+        if self.model.entities:
+            primary_entity = self.model.entities[0]
+            self.files.append(FileInstruction(
+                path=f"src/components/{primary_entity.name}List.tsx",
+                file_type=FileType.COMPONENT,
+                purpose=f"Interactive list component for {primary_entity.plural_name}",
+                entity=primary_entity.name,
+                must_include=[
+                    f"export function {primary_entity.name}List",
+                    "useState for data management",
+                    "Tailwind CSS styling",
+                    "Map over items to render list",
+                    "Add/delete functionality",
+                ],
+                imports_from=["src/lib/api.ts"],
+            ))
     
     def _add_nextjs_auth_pages(self):
         self.files.append(FileInstruction(
