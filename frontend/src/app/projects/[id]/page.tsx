@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -16,7 +16,10 @@ import {
   X,
   Send,
   Github,
-  AlertCircle
+  AlertCircle,
+  CheckCircle,
+  AlertTriangle,
+  XCircle
 } from "lucide-react";
 import ComponentLibrary from "@/components/canvas/ComponentLibrary";
 import ArchitectureCanvas from "@/components/canvas/ArchitectureCanvas";
@@ -24,6 +27,22 @@ import { useArchitectureStore } from "@/stores/architecture-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { Project } from "@/types/project";
+
+// Job status types
+type JobStatus = "pending" | "running" | "completed" | "failed" | "completed_with_warnings";
+
+interface Job {
+  jobId: string;
+  status: JobStatus;
+  error?: string;
+  warnings?: string[];
+  logs?: string[];
+  result?: {
+    files_generated?: number;
+    github_url?: string;
+  };
+  current_step?: string;
+}
 
 export default function ProjectEditorPage() {
   const params = useParams();
@@ -39,7 +58,14 @@ export default function ProjectEditorPage() {
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const [aiMessage, setAiMessage] = useState("");
   
-  const { nodes, setProjectName: setStoreName, setProjectId, clearCanvas } = useArchitectureStore();
+  // Generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentJob, setCurrentJob] = useState<Job | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationSuccess, setGenerationSuccess] = useState(false);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { nodes, edges, prompt, setProjectName: setStoreName, setProjectId, clearCanvas } = useArchitectureStore();
 
   const fetchProject = useCallback(async () => {
     if (!projectId || projectId === "new") return;
@@ -98,8 +124,130 @@ export default function ProjectEditorPage() {
     }
   };
 
-  const handleGenerate = () => {
-    console.log("Generating code from architecture...");
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
+
+  const pollJobStatus = useCallback(async (jobId: string) => {
+    try {
+      const { data, error: apiError } = await api.get<Job>(`/api/jobs/${jobId}`);
+      
+      if (apiError) {
+        console.error("Job poll error:", apiError);
+        return;
+      }
+      
+      if (data) {
+        setCurrentJob(data);
+        
+        // Check if job is complete
+        if (data.status === "completed") {
+          setIsGenerating(false);
+          setGenerationSuccess(true);
+          setGenerationError(null);
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          // Refresh project to get updated github_repo_url
+          fetchProject();
+        } else if (data.status === "completed_with_warnings") {
+          setIsGenerating(false);
+          setGenerationSuccess(true);
+          setGenerationError(null);
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          fetchProject();
+        } else if (data.status === "failed") {
+          setIsGenerating(false);
+          setGenerationSuccess(false);
+          setGenerationError(data.error || "Generation failed");
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Job polling error:", err);
+    }
+  }, [fetchProject]);
+
+  const handleGenerate = async () => {
+    if (!projectId || projectId === "new") {
+      setGenerationError("Please save the project first");
+      return;
+    }
+    
+    if (nodes.length === 0) {
+      setGenerationError("Add at least one component to generate code");
+      return;
+    }
+    
+    setIsGenerating(true);
+    setGenerationError(null);
+    setGenerationSuccess(false);
+    setCurrentJob(null);
+    
+    console.log("🚀 Starting code generation...");
+    console.log("📋 Nodes:", nodes.length);
+    console.log("📋 Edges:", edges.length);
+    console.log("📋 Prompt:", prompt);
+    
+    try {
+      // Build the architecture spec
+      const architectureSpec = {
+        name: projectName,
+        description: prompt || "Generated via Visual Editor",
+        prompt: prompt || "A standard software system",
+        nodes: nodes,
+        edges: edges,
+        metadata: {
+          projectId: projectId,
+          github_repo_url: project?.github_repo_url,
+        },
+        components: nodes.map((n: any) => n.data?.label || n.type),
+        frameworks: nodes.map((n: any) => n.data?.framework).filter(Boolean)
+      };
+      
+      console.log("📤 Sending job request...");
+      
+      const { data, error: apiError } = await api.post<{ jobId: string }>('/api/jobs', {
+        project_id: projectId,
+        architecture_spec: architectureSpec,
+      });
+      
+      if (apiError) {
+        console.error("❌ Job creation failed:", apiError);
+        setGenerationError(apiError);
+        setIsGenerating(false);
+        return;
+      }
+      
+      if (data?.jobId) {
+        console.log("✅ Job created:", data.jobId);
+        setCurrentJob({ jobId: data.jobId, status: "pending" });
+        
+        // Start polling for job status
+        pollingRef.current = setInterval(() => {
+          pollJobStatus(data.jobId);
+        }, 2000);
+        
+        // Initial poll
+        pollJobStatus(data.jobId);
+      }
+    } catch (err) {
+      console.error("❌ Generation error:", err);
+      setGenerationError(err instanceof Error ? err.message : "Failed to start generation");
+      setIsGenerating(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -228,13 +376,107 @@ export default function ProjectEditorPage() {
 
           <button 
             onClick={handleGenerate}
-            className="flex items-center gap-2 px-4 py-1.5 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-1.5 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Sparkles className="w-4 h-4" />
-            <span className="hidden sm:inline">Generate</span>
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="hidden sm:inline">Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Generate</span>
+              </>
+            )}
           </button>
         </div>
       </header>
+
+      {/* Generation Status Banner */}
+      {(isGenerating || generationError || generationSuccess) && (
+        <div className={`px-4 py-3 flex items-center justify-between ${
+          generationError 
+            ? 'bg-red-500/10 border-b border-red-500/20' 
+            : generationSuccess 
+              ? currentJob?.status === 'completed_with_warnings'
+                ? 'bg-yellow-500/10 border-b border-yellow-500/20'
+                : 'bg-green-500/10 border-b border-green-500/20'
+              : 'bg-blue-500/10 border-b border-blue-500/20'
+        }`}>
+          <div className="flex items-center gap-3">
+            {generationError ? (
+              <XCircle className="w-5 h-5 text-red-400" />
+            ) : generationSuccess ? (
+              currentJob?.status === 'completed_with_warnings' ? (
+                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              )
+            ) : (
+              <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+            )}
+            
+            <div>
+              <p className={`text-sm font-medium ${
+                generationError 
+                  ? 'text-red-300' 
+                  : generationSuccess 
+                    ? currentJob?.status === 'completed_with_warnings'
+                      ? 'text-yellow-300'
+                      : 'text-green-300'
+                    : 'text-blue-300'
+              }`}>
+                {generationError 
+                  ? 'Generation Failed' 
+                  : generationSuccess 
+                    ? currentJob?.status === 'completed_with_warnings'
+                      ? 'Completed with Warnings'
+                      : 'Generation Complete!'
+                    : currentJob?.current_step || 'Generating code...'}
+              </p>
+              {generationError && (
+                <p className="text-xs text-red-400/80 mt-0.5">{generationError}</p>
+              )}
+              {currentJob?.warnings && currentJob.warnings.length > 0 && (
+                <p className="text-xs text-yellow-400/80 mt-0.5">
+                  {currentJob.warnings[0]}
+                </p>
+              )}
+              {currentJob?.result?.files_generated && (
+                <p className="text-xs text-green-400/80 mt-0.5">
+                  {currentJob.result.files_generated} files generated
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {generationSuccess && project?.github_repo_url && (
+              <a
+                href={project.github_repo_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-1.5 bg-white text-stone-950 rounded-lg text-sm font-medium hover:bg-stone-100 transition-all"
+              >
+                <Github className="w-4 h-4" />
+                View on GitHub
+              </a>
+            )}
+            <button
+              onClick={() => {
+                setGenerationError(null);
+                setGenerationSuccess(false);
+                setCurrentJob(null);
+              }}
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4 text-stone-400" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-64 flex-shrink-0 overflow-hidden border-r border-stone-800/30">

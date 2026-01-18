@@ -887,6 +887,7 @@ async def get_job_status(
     
     response = {
         "job_id": job["_id"],
+        "jobId": job["_id"],  # Frontend expects camelCase
         "status": job["status"],
         "created_at": job["created_at"].isoformat(),
         "updated_at": job["updated_at"].isoformat(),
@@ -900,6 +901,12 @@ async def get_job_status(
     
     if job.get("error"):
         response["error"] = job["error"]
+    
+    if job.get("warnings"):
+        response["warnings"] = job["warnings"]
+    
+    if job.get("current_step"):
+        response["current_step"] = job["current_step"]
     
     if job.get("metadata"):
         response["metadata"] = job["metadata"]
