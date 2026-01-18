@@ -10,9 +10,14 @@ export function Navbar() {
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    
+    const token = document.cookie.includes("auth_token=");
+    setIsLoggedIn(token);
+    
     gsap.set(navRef.current, { opacity: 0, y: -20 });
     gsap.to(navRef.current, { 
       opacity: 1, 
@@ -79,15 +84,17 @@ export function Navbar() {
               Process
             </a>
 
-            <Link 
-              href="/login" 
-              className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
-            >
-              Sign In
-            </Link>
+            {!isLoggedIn && (
+              <Link 
+                href="/login" 
+                className={`text-[11px] transition-colors duration-500 ease-out tracking-widest uppercase font-medium ${linkColor}`}
+              >
+                Sign In
+              </Link>
+            )}
 
             <Link 
-              href="/dashboard/new" 
+              href={isLoggedIn ? "/dashboard/new" : "/login"}
               className={`text-[11px] px-4 py-2 rounded-full transition-all duration-500 ease-out tracking-widest uppercase font-medium ${buttonStyle}`}
             >
               Start Project
