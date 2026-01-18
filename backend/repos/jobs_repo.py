@@ -198,3 +198,57 @@ async def append_job_warnings(userId: str, jobId: str, warnings: List[str]) -> b
         return result.modified_count > 0
     
     return False
+
+
+async def update_job_progress(
+    userId: str,
+    jobId: str,
+    current_step: Optional[str] = None,
+    files_created: Optional[List[str]] = None,
+    total_iterations: Optional[int] = None,
+    translated_spec: Optional[str] = None
+) -> bool:
+    """
+    Update job progress for observability (Layer 4).
+    
+    This allows the frontend to show:
+    - Current step (e.g., "Writing main.py")
+    - Files created so far
+    - Total LLM iterations
+    - The translated architecture spec (for debugging)
+    """
+    db = get_db()
+    collection = db.jobs
+    
+    update_doc = {"updatedAt": get_utc_now()}
+    
+    if current_step is not None:
+        update_doc["current_step"] = current_step
+    
+    if total_iterations is not None:
+        update_doc["total_iterations"] = total_iterations
+    
+    if translated_spec is not None:
+        update_doc["translated_spec"] = translated_spec
+    
+    update_ops = {"$set": update_doc}
+    
+    if files_created:
+        update_ops["$addToSet"] = {"files_created": {"$each": files_created}}
+    
+    result = await collection.update_one(
+        {"userId": userId, "jobId": jobId},
+        update_ops
+    )
+    
+    return result.modified_count > 0
+
+
+async def get_job_by_id(jobId: str) -> Optional[dict]:
+    """
+    Get job by jobId only (used by background worker).
+    Note: This bypasses userId check - use only for internal operations.
+    """
+    db = get_db()
+    collection = db.jobs
+    return await collection.find_one({"jobId": jobId})

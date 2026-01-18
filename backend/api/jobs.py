@@ -175,3 +175,34 @@ async def list_project_jobs(project_id: str, user: dict = Depends(get_current_us
     user_id = get_user_id(user)
     jobs = await jobs_repo.list_jobs_for_project(user_id, project_id)
     return [serialize_job(j) for j in jobs]
+
+
+@router.get("/{job_id}/logs")
+async def get_job_logs(job_id: str, user: dict = Depends(get_current_user)):
+    """
+    Get detailed logs for a job.
+    
+    Returns:
+        - logs: Array of log entries
+        - files_created: List of files written by the agent
+        - current_step: Current step description
+        - total_iterations: How many LLM calls were made
+        
+    This is Layer 4 (Observability) - allows users to see what the agent is doing.
+    """
+    user_id = get_user_id(user)
+    job = await jobs_repo.get_job(user_id, job_id)
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    return {
+        "jobId": job_id,
+        "status": job.get("status"),
+        "logs": job.get("logs", []),
+        "files_created": job.get("files_created", []),
+        "current_step": job.get("current_step", ""),
+        "total_iterations": job.get("total_iterations", 0),
+        "translated_spec": job.get("translated_spec", ""),
+    }
+
