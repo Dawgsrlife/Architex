@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Logo, LogoMark } from "@/components/Logo";
+import { Layout, Brain, Github, Layers, Code2, Cpu, Globe, Database } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -118,11 +119,11 @@ function HeroSection() {
     return () => ctx.revert();
   }, []);
 
-  const heroImages = [
-    "/assets/pexels-cottonbro-9665180.jpg",
-    "/assets/pexels-cottonbro-9667824.jpg",
-    "/assets/pexels-jakubzerdzicki-29521529.jpg",
-    "/assets/pexels-picjumbo-com-55570-196644.jpg",
+  const featureNodes = [
+    { label: "Visual Blueprint", icon: Layout, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Agentic AI", icon: Brain, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { label: "GitHub Repo", icon: Github, color: "text-stone-400", bg: "bg-stone-400/10" },
+    { label: "Cloud Infra", icon: Globe, color: "text-emerald-500", bg: "bg-emerald-500/10" },
   ];
 
   return (
@@ -132,24 +133,22 @@ function HeroSection() {
       
       <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-32 pb-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center min-h-[80vh]">
-          <div ref={gridRef} className="grid grid-cols-2 gap-4 order-2 lg:order-1">
-            {heroImages.map((img, i) => (
+          <div ref={gridRef} className="grid grid-cols-2 gap-6 order-2 lg:order-1">
+            {featureNodes.map((node, i) => (
               <div
                 key={i}
-                className="hero-card group relative aspect-square rounded-2xl overflow-hidden cursor-pointer"
+                className="hero-card group relative aspect-square rounded-3xl overflow-hidden cursor-pointer"
                 style={{ perspective: "1000px" }}
               >
-                <div className="absolute inset-0 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl">
-                  <Image
-                    src={img}
-                    alt={`Project ${i + 1}`}
-                    fill
-                    className="object-cover rounded-2xl transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
-                    <span className="text-white text-sm font-medium">0{i + 1}</span>
+                <div className="absolute inset-0 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl p-8 flex flex-col items-center justify-center gap-6 transition-all duration-500 group-hover:border-[#7c3aed]/50">
+                  <div className={`w-16 h-16 rounded-2xl ${node.bg} flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+                    <node.icon className={`w-8 h-8 ${node.color}`} />
                   </div>
+                  <span className="text-stone-900 dark:text-stone-100 font-bold tracking-tight text-center">{node.label}</span>
+                  
+                  {/* Decorative Connectors */}
+                  <div className="absolute top-1/2 -right-3 w-6 h-[2px] bg-stone-200 dark:bg-stone-800 hidden lg:block" />
+                  <div className="absolute -bottom-3 left-1/2 w-[2px] h-6 bg-stone-200 dark:bg-stone-800 hidden lg:block" />
                 </div>
               </div>
             ))}
@@ -158,7 +157,7 @@ function HeroSection() {
           <div className="order-1 lg:order-2 space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-stone-200/50 dark:border-stone-700/50 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#7c3aed] animate-pulse" />
-              <span className="text-sm font-medium text-stone-600 dark:text-stone-300">Now accepting projects</span>
+              <span className="text-sm font-medium text-stone-600 dark:text-stone-300">Hackathon Special Edition</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
@@ -174,13 +173,13 @@ function HeroSection() {
             </h1>
 
             <p ref={subtitleRef} className="text-lg lg:text-xl text-stone-600 dark:text-stone-400 max-w-lg leading-relaxed">
-              Design your system visually. Architex uses agentic AI to transform your blueprint into a production-ready GitHub repository.
+              Skip the boilerplate. Architex transforms your visual system design into a production-ready repository through agentic AI automation.
             </p>
 
             <div ref={ctaRef} className="flex flex-wrap gap-4">
               <Link href="/workflow">
                 <Button size="lg" className="h-14 px-8 rounded-full bg-stone-900 text-white hover:bg-stone-800 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-100 shadow-xl shadow-stone-900/20 dark:shadow-white/20 group">
-                  Start your project
+                  Start Building
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
@@ -188,59 +187,10 @@ function HeroSection() {
               </Link>
               <Link href="#work">
                 <Button variant="outline" size="lg" className="h-14 px-8 rounded-full border-2 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800">
-                  View our work
+                  View Examples
                 </Button>
               </Link>
             </div>
-          </div>
-        </div>
-
-        <div ref={videoRef} className="mt-16 relative group">
-          <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200/30 dark:border-stone-700/30 shadow-2xl relative">
-            <video autoPlay loop muted playsInline className="w-full h-full object-cover grayscale-[0.5] contrast-[1.1]">
-              <source src="/assets/12777809_3840_2160_30fps.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-stone-950/20" />
-            
-            {/* Overlay UI Elements */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {/* Floating Node 1 */}
-              <div className="absolute top-1/4 left-10 w-48 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl animate-float-slow">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Data Stream</span>
-                </div>
-                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 w-2/3 animate-pulse" />
-                </div>
-              </div>
-
-              {/* Floating Node 2 */}
-              <div className="absolute bottom-1/4 right-10 w-56 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl animate-float-delayed">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-[10px] font-bold text-[#a78bfa] uppercase">Logic Module</span>
-                  <svg className="w-3 h-3 text-white/50" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-1.5 w-full bg-white/5 rounded-full" />
-                  <div className="h-1.5 w-3/4 bg-white/5 rounded-full" />
-                  <div className="h-1.5 w-1/2 bg-[#a78bfa]/40 rounded-full" />
-                </div>
-              </div>
-
-              {/* Center Status */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                <div className="w-16 h-16 rounded-full bg-[#7c3aed]/20 backdrop-blur-xl border border-[#7c3aed]/50 flex items-center justify-center mb-4 mx-auto cursor-pointer hover:scale-110 transition-transform">
-                  <svg className="w-6 h-6 text-white translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-white/80 tracking-tight">Watch Demo Overview</span>
-              </div>
-            </div>
-
-            {/* Scanning Effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#7c3aed]/5 to-transparent h-1/2 w-full -translate-y-full animate-scan pointer-events-none" />
           </div>
         </div>
       </div>
@@ -298,9 +248,9 @@ function WorkSection() {
   }, []);
 
   const works = [
-    { num: "001", title: "Full-Stack SaaS", desc: "Next.js + FastAPI + PostgreSQL + Stripe", video: "/assets/14471955_3840_2160_30fps.mp4" },
-    { num: "002", title: "AI Dashboard", desc: "Real-time analytics with Gemini integration", video: "/assets/6346217-uhd_4096_2160_25fps.mp4" },
-    { num: "003", title: "Microservices Mesh", desc: "Go/Node.js architecture with Redis & Docker", video: "/assets/12575318_3840_2160_30fps.mp4" },
+    { num: "001", title: "Full-Stack SaaS", desc: "Next.js + FastAPI + PostgreSQL + Stripe", icon: Layers },
+    { num: "002", title: "AI Dashboard", desc: "Real-time analytics with Gemini integration", icon: Cpu },
+    { num: "003", title: "Microservices Mesh", desc: "Go/Node.js architecture with Redis & Docker", icon: Database },
   ];
 
   return (
@@ -308,7 +258,7 @@ function WorkSection() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div ref={titleRef} className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-20">
           <div>
-            <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Generated Architectures</span>
+            <span className="text-sm font-semibold uppercase tracking-widest text-[#7c3aed] dark:text-[#a78bfa] mb-4 block">Generated Repositories</span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
               Ready to
               <br />
@@ -325,23 +275,22 @@ function WorkSection() {
             <div
               key={work.num}
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
-              className="group relative rounded-3xl overflow-hidden bg-stone-100 dark:bg-stone-900 border border-stone-200/50 dark:border-stone-800 hover:border-[#7c3aed]/50 transition-all duration-500"
+              className="group relative rounded-3xl overflow-hidden bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-[#7c3aed]/50 transition-all duration-500 p-10"
             >
-              <div className="aspect-[4/3] relative overflow-hidden">
-                <video autoPlay loop muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                  <source src={work.video} type="video/mp4" />
-                </video>
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent" />
+              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-sm">
+                <work.icon className="w-8 h-8 text-[#7c3aed]" />
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <span className="text-[#a78bfa] text-sm font-mono mb-2 block">{work.num}</span>
-                <h3 className="text-2xl font-bold text-white mb-2">{work.title}</h3>
-                <p className="text-stone-400 text-sm">{work.desc}</p>
+              <div className="space-y-4">
+                <span className="text-[#a78bfa] text-xs font-mono tracking-widest uppercase">{work.num}</span>
+                <h3 className="text-2xl font-bold text-stone-900 dark:text-white">{work.title}</h3>
+                <p className="text-stone-500 dark:text-stone-400 text-sm leading-relaxed">{work.desc}</p>
               </div>
-              <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+              
+              <div className="mt-8 flex items-center gap-4">
+                <div className="h-1 flex-1 bg-stone-200 dark:bg-stone-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#7c3aed] w-0 group-hover:w-full transition-all duration-1000 ease-out" />
+                </div>
+                <span className="text-[10px] font-bold text-stone-400 uppercase">Ready</span>
               </div>
             </div>
           ))}
@@ -550,9 +499,9 @@ function TestimonialsSection() {
   }, []);
 
   const testimonials = [
-    { quote: "Architex transformed our entire workflow infrastructure. The attention to detail and execution was flawless.", name: "Sarah Chen", role: "CTO, DataFlow", image: "/assets/pexels-cottonbro-9665180.jpg" },
-    { quote: "Working with their team felt like having an extension of our own engineering department.", name: "Marcus Johnson", role: "VP Engineering, Nexus", image: "/assets/pexels-cottonbro-9667824.jpg" },
-    { quote: "The visual architecture system they built has become the backbone of our entire operation.", name: "Emily Rodriguez", role: "Founder, TechScale", image: "/assets/pexels-jakubzerdzicki-29521529.jpg" },
+    { quote: "Architex transformed our entire workflow infrastructure. The attention to detail and execution was flawless.", name: "Sarah Chen", role: "CTO, DataFlow", initials: "SC" },
+    { quote: "Working with their team felt like having an extension of our own engineering department.", name: "Marcus Johnson", role: "VP Engineering, Nexus", initials: "MJ" },
+    { quote: "The visual architecture system they built has become the backbone of our entire operation.", name: "Emily Rodriguez", role: "Founder, TechScale", initials: "ER" },
   ];
 
   return (
@@ -571,22 +520,23 @@ function TestimonialsSection() {
             <div
               key={t.name}
               ref={(el) => { if (el) cardsRef.current[i] = el; }}
-              className="group relative rounded-3xl overflow-hidden"
+              className="group relative rounded-3xl overflow-hidden p-10 bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 transition-all duration-500 hover:border-[#7c3aed]/30 shadow-sm"
               style={{ perspective: "1000px" }}
             >
-              <div className="absolute inset-0">
-                <Image src={t.image} alt={t.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/70 to-stone-950/20" />
-              </div>
-              <div className="relative p-8 pt-56">
-                <p className="text-lg text-white/90 leading-relaxed mb-8">&ldquo;{t.quote}&rdquo;</p>
+              <div className="relative z-10">
+                <div className="mb-8">
+                  <svg className="w-10 h-10 text-[#7c3aed]/20" fill="currentColor" viewBox="0 0 32 32">
+                    <path d="M10 8v8h6v2a4 4 0 0 1-4 4h-2v2h2a6 6 0 0 0 6-6v-10h-8zM22 8v8h6v2a4 4 0 0 1-4 4h-2v2h2a6 6 0 0 0 6-6v-10h-8z" />
+                  </svg>
+                </div>
+                <p className="text-lg text-stone-700 dark:text-stone-300 leading-relaxed mb-10">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#7c3aed]/20 backdrop-blur-sm flex items-center justify-center">
-                    <span className="text-[#a78bfa] font-bold">{t.name[0]}</span>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#a78bfa] flex items-center justify-center shadow-lg shadow-[#7c3aed]/20">
+                    <span className="text-white font-bold">{t.initials}</span>
                   </div>
                   <div>
-                    <p className="font-bold text-white">{t.name}</p>
-                    <p className="text-sm text-white/60">{t.role}</p>
+                    <p className="font-bold text-stone-900 dark:text-white">{t.name}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-500">{t.role}</p>
                   </div>
                 </div>
               </div>
