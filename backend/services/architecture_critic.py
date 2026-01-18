@@ -464,18 +464,24 @@ class ArchitectureCritic:
             logger.info(f"LLM critique found {len(llm_issues)} issues")
         
         # Step 4: Determine blocking status
+        # DEMO MODE: Only block on truly critical structural issues (no nodes/edges)
+        # HIGH severity issues (like missing auth) become warnings, not blockers
         critical_count = sum(1 for i in all_issues if i.severity == IssueSeverity.CRITICAL)
         high_count = sum(1 for i in all_issues if i.severity == IssueSeverity.HIGH)
         
-        blocking = critical_count > 0 or high_count >= 3
+        # Only block on CRITICAL issues (structural failures like no nodes, no edges)
+        # HIGH issues are logged as warnings but don't block generation
+        blocking = critical_count > 0
         
         # Step 5: Build summary
         if not all_issues:
             summary = "Architecture looks sound. No significant issues detected."
         elif blocking:
-            summary = f"Architecture has blocking issues ({critical_count} critical, {high_count} high severity). Code generation will NOT proceed until these are addressed."
+            summary = f"Architecture has {critical_count} critical structural issues. Fix these before generating."
+        elif high_count > 0:
+            summary = f"Architecture has {high_count} high-severity recommendations. Generation will proceed with warnings."
         else:
-            summary = f"Architecture has {len(all_issues)} issues to consider. Code generation can proceed but review recommendations."
+            summary = f"Architecture has {len(all_issues)} minor issues to consider. Generation will proceed."
         
         return CriticResult(
             summary=summary,
