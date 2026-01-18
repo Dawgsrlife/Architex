@@ -15,10 +15,15 @@ import {
   Command,
   MessageSquare,
   X,
-  Send
+  Send,
+  FileText,
+  Rocket,
+  FolderTree
 } from "lucide-react";
 import ComponentLibrary from "@/components/canvas/ComponentLibrary";
 import ArchitectureCanvas from "@/components/canvas/ArchitectureCanvas";
+import CriticStatus from "@/components/canvas/CriticStatus";
+import ProvenanceMapping from "@/components/canvas/ProvenanceMapping";
 import { useArchitectureStore } from "@/stores/architecture-store";
 
 export default function ProjectEditorPage() {
@@ -31,8 +36,36 @@ export default function ProjectEditorPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const [aiMessage, setAiMessage] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showProvenance, setShowProvenance] = useState(false);
   
-  const { nodes, setProjectName: setStoreName, setProjectId, clearCanvas } = useArchitectureStore();
+  const { 
+    nodes, 
+    edges,
+    prompt,
+    setPrompt,
+    criticResult,
+    isCriticLoading,
+    runCritic,
+    setProjectName: setStoreName, 
+    setProjectId, 
+    clearCanvas 
+  } = useArchitectureStore();
+
+  // Run critic when architecture changes (debounced)
+  useEffect(() => {
+    if (nodes.length === 0) return;
+    
+    const timer = setTimeout(() => {
+      runCritic();
+    }, 1000); // Debounce 1 second
+
+    return () => clearTimeout(timer);
+  }, [nodes.length, edges.length, prompt]);
+  
+  // Check if generation is blocked
+  const isBlocked = criticResult?.blocking === true;
+  const canGenerate = nodes.length > 0 && prompt.trim().length > 0 && !isBlocked && !isCriticLoading;
 
   useEffect(() => {
     if (projectId === "new") {
@@ -54,8 +87,51 @@ export default function ProjectEditorPage() {
     setSaving(false);
   };
 
-  const handleGenerate = () => {
-    console.log("Generating code from architecture...");
+  const handleGenerate = async () => {
+    if (!canGenerate) return;
+    
+    setIsGenerating(true);
+    
+    try {
+      const architectureSpec = {
+        name: projectName,
+        description: prompt,
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.type,
+          data: n.data
+        })),
+        edges: edges.map(e => ({
+          id: e.id,
+          source: e.source,
+          target: e.target
+        })),
+        metadata: {
+          intent: prompt
+        }
+      };
+
+      const response = await fetch("http://localhost:8000/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          architecture_spec: architectureSpec,
+          project_id: projectId !== "new" ? projectId : null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start generation");
+      }
+
+      const data = await response.json();
+      console.log("Job started:", data.job_id);
+      // TODO: Navigate to job progress page or show modal
+    } catch (error) {
+      console.error("Generation failed:", error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (loading) {
@@ -141,10 +217,32 @@ export default function ProjectEditorPage() {
 
           <button 
             onClick={handleGenerate}
-            className="flex items-center gap-2 px-4 py-1.5 bg-white text-stone-950 rounded-full text-sm font-medium hover:bg-stone-100 transition-all active:scale-95 cursor-pointer"
+            disabled={!canGenerate || isGenerating}
+            title={isBlocked ? "Fix architecture issues before generating" : !prompt.trim() ? "Add a project description first" : ""}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+              isBlocked 
+                ? "bg-red-500/20 text-red-400 border border-red-500/30" 
+                : canGenerate 
+                  ? "bg-white text-stone-950 hover:bg-stone-100"
+                  : "bg-stone-700 text-stone-400"
+            }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span className="hidden sm:inline">Generate</span>
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="hidden sm:inline">Generating...</span>
+              </>
+            ) : isBlocked ? (
+              <>
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Blocked</span>
+              </>
+            ) : (
+              <>
+                <Rocket className="w-4 h-4" />
+                <span className="hidden sm:inline">Generate</span>
+              </>
+            )}
           </button>
         </div>
       </header>
@@ -171,12 +269,12 @@ export default function ProjectEditorPage() {
           <aside className="w-80 border-l border-stone-800/30 bg-stone-950 flex-shrink-0 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-stone-800/30 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-violet-400" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-600/20 flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-white">AI Assistant</h3>
-                  <p className="text-xs text-stone-500">Ask for architecture help</p>
+                  <h3 className="text-sm font-medium text-white">Project Intent</h3>
+                  <p className="text-xs text-stone-500">Describe what you&apos;re building</p>
                 </div>
               </div>
               <button 
@@ -187,50 +285,135 @@ export default function ProjectEditorPage() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div className="bg-stone-900/50 border border-stone-800/40 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-stone-300 leading-relaxed">
-                        Welcome to Architex! I can help you design your system architecture. Try:
-                      </p>
-                      <ul className="mt-3 space-y-2">
-                        <li className="text-xs text-stone-500 flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-stone-600" />
-                          Drag components from the left panel
-                        </li>
-                        <li className="text-xs text-stone-500 flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-stone-600" />
-                          Connect them by dragging handles
-                        </li>
-                        <li className="text-xs text-stone-500 flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-stone-600" />
-                          Ask me for suggestions or optimizations
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Intent/Prompt Input */}
+              <div>
+                <label className="block text-xs font-medium text-stone-400 mb-2">
+                  What are you building?
+                </label>
+                <textarea
+                  placeholder="e.g., A SaaS dashboard for managing user subscriptions with authentication, billing integration, and analytics..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-stone-900/50 border border-stone-800/40 rounded-xl text-white text-sm placeholder-stone-600 focus:outline-none focus:border-stone-600 resize-none"
+                />
+                <p className="text-xs text-stone-600 mt-1.5">
+                  Be specific about features, user types, and integrations
+                </p>
               </div>
+
+              {/* Critic Status */}
+              <div>
+                <label className="block text-xs font-medium text-stone-400 mb-2">
+                  Architecture Validation
+                </label>
+                <CriticStatus />
+              </div>
+
+              {/* Quick Tips */}
+              <div className="bg-stone-900/30 border border-stone-800/30 rounded-xl p-4">
+                <h4 className="text-xs font-medium text-stone-300 mb-2">Quick Tips</h4>
+                <ul className="space-y-2">
+                  <li className="text-xs text-stone-500 flex items-start gap-2">
+                    <span className="w-1 h-1 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                    Add an Auth component for user management
+                  </li>
+                  <li className="text-xs text-stone-500 flex items-start gap-2">
+                    <span className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                    Connect your Frontend to Backend with edges
+                  </li>
+                  <li className="text-xs text-stone-500 flex items-start gap-2">
+                    <span className="w-1 h-1 rounded-full bg-purple-500 mt-1.5 flex-shrink-0" />
+                    Include a Database for persistent data
+                  </li>
+                </ul>
+              </div>
+
+              {/* Architecture Summary */}
+              {nodes.length > 0 && (
+                <div className="bg-stone-900/30 border border-stone-800/30 rounded-xl p-4">
+                  <h4 className="text-xs font-medium text-stone-300 mb-2">Current Architecture</h4>
+                  <div className="space-y-1">
+                    {nodes.slice(0, 5).map((node) => (
+                      <div key={node.id} className="flex items-center gap-2 text-xs text-stone-400">
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: node.data.color || "#6b7280" }}
+                        />
+                        {node.data.label}
+                      </div>
+                    ))}
+                    {nodes.length > 5 && (
+                      <p className="text-xs text-stone-600">+{nodes.length - 5} more components</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-600 mt-2">
+                    {edges.length} connection{edges.length !== 1 ? "s" : ""}
+                  </p>
+                  
+                  {/* Preview Provenance Button */}
+                  <button
+                    onClick={() => setShowProvenance(!showProvenance)}
+                    className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-xs text-stone-400 hover:text-stone-200 bg-stone-800/50 hover:bg-stone-800 rounded-lg transition-colors"
+                  >
+                    <FolderTree className="w-3.5 h-3.5" />
+                    {showProvenance ? "Hide File Preview" : "Preview Generated Files"}
+                  </button>
+                </div>
+              )}
+
+              {/* Provenance Mapping */}
+              {showProvenance && nodes.length > 0 && prompt.trim() && (
+                <ProvenanceMapping
+                  architectureSpec={{
+                    name: projectName,
+                    description: prompt,
+                    nodes: nodes.map(n => ({
+                      id: n.id,
+                      data: { label: n.data.label, color: n.data.color }
+                    })),
+                    edges: edges.map(e => ({
+                      id: e.id,
+                      source: e.source,
+                      target: e.target
+                    })),
+                    metadata: { intent: prompt }
+                  }}
+                />
+              )}
             </div>
 
-            <div className="p-4 border-t border-stone-800/30">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ask AI for suggestions..."
-                  value={aiMessage}
-                  onChange={(e) => setAiMessage(e.target.value)}
-                  className="w-full px-4 py-3 bg-stone-900/50 border border-stone-800/40 rounded-xl text-white text-sm placeholder-stone-500 focus:outline-none focus:border-stone-700 pr-12"
-                />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white rounded-lg hover:bg-stone-100 transition-colors cursor-pointer">
-                  <Send className="w-4 h-4 text-stone-950" />
-                </button>
-              </div>
+            {/* Generate Section */}
+            <div className="p-4 border-t border-stone-800/30 space-y-3">
+              {!canGenerate && (
+                <div className="text-xs text-stone-500 text-center">
+                  {nodes.length === 0 && "Add components to your architecture"}
+                  {nodes.length > 0 && !prompt.trim() && "Describe what you're building above"}
+                  {nodes.length > 0 && prompt.trim() && isBlocked && "Fix the blocking issues above"}
+                </div>
+              )}
+              <button
+                onClick={handleGenerate}
+                disabled={!canGenerate || isGenerating}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  canGenerate 
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-purple-500/20"
+                    : "bg-stone-800 text-stone-500 cursor-not-allowed"
+                }`}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating Code...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4" />
+                    Generate Project
+                  </>
+                )}
+              </button>
             </div>
           </aside>
         )}

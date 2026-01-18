@@ -1,0 +1,41 @@
+{
+  "name": "IncompleteApp",
+  "description": "This architecture is intentionally incomplete to demonstrate the critic",
+  "nodes": [
+    {
+      "id": "frontend-nextjs",
+      "type": "custom",
+      "position": { "x": 100, "y": 200 },
+      "data": {
+        "label": "Next.js Frontend",
+        "componentId": "nextjs",
+        "category": "frontend",
+        "icon": "Monitor",
+        "color": "#3b82f6"
+      }
+    },
+    {
+      "id": "backend-fastapi",
+      "type": "custom",
+      "position": { "x": 400, "y": 200 },
+      "data": {
+        "label": "FastAPI Backend",
+        "componentId": "fastapi",
+        "category": "backend",
+        "icon": "Server",
+        "color": "#10b981"
+      }
+    }
+  ],
+  "edges": [],
+  "metadata": {
+    "intent": "",
+    "created_for": "demo_invalid",
+    "issues_expected": [
+      "No edges between components",
+      "No database",
+      "No auth",
+      "Vague/missing intent"
+    ]
+  }
+}

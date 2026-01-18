@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ReactFlowProvider } from "@xyflow/react";
 import { 
   ArrowLeft, 
   Save, 
-  Play, 
   Sparkles, 
   Share2,
   Download,
@@ -15,18 +14,26 @@ import {
   Command,
   MessageSquare,
   X,
-  Send
+  Send,
+  Github,
+  AlertCircle
 } from "lucide-react";
 import ComponentLibrary from "@/components/canvas/ComponentLibrary";
 import ArchitectureCanvas from "@/components/canvas/ArchitectureCanvas";
 import { useArchitectureStore } from "@/stores/architecture-store";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { Project } from "@/types/project";
 
 export default function ProjectEditorPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState("Untitled Project");
   const [isEditingName, setIsEditingName] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
@@ -34,34 +41,91 @@ export default function ProjectEditorPage() {
   
   const { nodes, setProjectName: setStoreName, setProjectId, clearCanvas } = useArchitectureStore();
 
-  useEffect(() => {
-    if (projectId === "new") {
-      clearCanvas();
-      setProjectName("Untitled Project");
-      setStoreName("Untitled Project");
-      setProjectId(null);
-    } else {
-      setProjectId(projectId);
-      setProjectName(`Project ${projectId}`);
-      setStoreName(`Project ${projectId}`);
+  const fetchProject = useCallback(async () => {
+    if (!projectId || projectId === "new") return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error: apiError } = await api.get<Project>(`/api/projects/${projectId}`);
+      if (apiError) {
+        setError(apiError);
+      } else if (data) {
+        setProject(data);
+        setProjectName(data.name);
+        setStoreName(data.name);
+        setProjectId(data.projectId);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load project');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [projectId, clearCanvas, setStoreName, setProjectId]);
+  }, [projectId, setStoreName, setProjectId]);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      if (projectId === "new") {
+        clearCanvas();
+        setProjectName("Untitled Project");
+        setStoreName("Untitled Project");
+        setProjectId(null);
+        setLoading(false);
+      } else {
+        fetchProject();
+      }
+    }
+  }, [authLoading, isAuthenticated, projectId, clearCanvas, setStoreName, setProjectId, fetchProject]);
 
   const handleSave = async () => {
+    if (!projectId || projectId === "new") return;
+    
     setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSaving(false);
+    try {
+      const { error: saveError } = await api.patch(`/api/projects/${projectId}`, {
+        name: projectName,
+        nodes_count: nodes.length,
+      });
+      
+      if (saveError) {
+        console.error("Save error:", saveError);
+      }
+    } catch (err) {
+      console.error("Save failed:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleGenerate = () => {
     console.log("Generating code from architecture...");
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-stone-950">
         <Loader2 className="w-6 h-6 text-white animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-stone-950">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h1 className="text-white text-xl font-medium mb-2">Error loading project</h1>
+          <p className="text-stone-400 text-sm mb-4">{error}</p>
+          <Link href="/projects" className="inline-flex items-center gap-2 px-4 py-2 bg-white text-stone-950 rounded-lg text-sm font-medium">
+            Back to Projects
+          </Link>
+        </div>
       </div>
     );
   }
@@ -111,9 +175,32 @@ export default function ProjectEditorPage() {
           <span className="text-xs text-stone-600 hidden sm:inline">
             {nodes.length} nodes
           </span>
+
+          {project?.github_repo_url && (
+            <a 
+              href={project.github_repo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1.5 text-xs text-stone-500 hover:text-white transition-colors"
+            >
+              <Github className="w-3.5 h-3.5" />
+              <span className="max-w-[150px] truncate">{project.github_repo_url.replace('https://github.com/', '')}</span>
+            </a>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
+          {project?.github_repo_url && (
+            <a 
+              href={project.github_repo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="md:hidden flex items-center gap-2 px-3 py-1.5 text-sm text-stone-400 hover:text-white hover:bg-stone-800/50 rounded-lg transition-all"
+            >
+              <Github className="w-4 h-4" />
+            </a>
+          )}
+
           <button 
             onClick={handleSave}
             disabled={saving}

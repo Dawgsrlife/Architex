@@ -28,6 +28,8 @@ import { useSocket } from '@/hooks/useSocket';
 import { ReviewModal } from './ReviewModal';
 import { Loader2, Play, Plus, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { api, API_URL, AuthRequiredError } from '@/lib/api';
+import { ensureProjectExists } from '@/lib/project';
 
 const nodeTypes = {
     frontend: FrontendNode,
@@ -65,7 +67,8 @@ function Flow() {
     const { screenToFlowPosition } = useReactFlow();
 
     // Socket connection to backend
-    const { socket, isConnected, lastMessage } = useSocket('http://localhost:8000');
+    // Use API_URL for socket connection
+    const { socket, isConnected, lastMessage } = useSocket(API_URL);
 
     const [showReview, setShowReview] = useState(false);
     const [reviewData, setReviewData] = useState<any>(null);
@@ -82,11 +85,15 @@ function Flow() {
                 if (lastMessage.message === 'REVIEW_REQUIRED' && lastMessage.job_id) {
                     console.log("Review required for job:", lastMessage.job_id);
                     setCurrentJobId(lastMessage.job_id);
-                    // Fetch job details to get the file tree
-                    fetch(`http://localhost:8000/api/jobs/${lastMessage.job_id}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.result || data.generation_result) {
+                    // Fetch job details using api client
+                    api.get<{ result?: unknown; generation_result?: unknown }>(`/api/jobs/${lastMessage.job_id}`)
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error("Failed to fetch job details for review:", error);
+                                toast.error("Failed to load review data.");
+                                return;
+                            }
+                            if (data?.result || data?.generation_result) {
                                 setReviewData(data.generation_result || data.result);
                                 setShowReview(true);
                             }
@@ -147,14 +154,16 @@ function Flow() {
         if (!currentJobId) return;
         setIsApproving(true);
         try {
-            const res = await fetch(`http://localhost:8000/api/jobs/${currentJobId}/approve`, {
-                method: 'POST'
-            });
-            if (!res.ok) throw new Error('Failed to approve');
+            const { error } = await api.post(`/api/jobs/${currentJobId}/approve`);
+            if (error) throw new Error(error);
             toast.success("Design approved! Building project...");
             setShowReview(false);
         } catch (error) {
-            toast.error("Failed to approve job");
+            if (error instanceof AuthRequiredError) {
+                toast.error("Please log in to approve jobs.");
+            } else {
+                toast.error("Failed to approve job");
+            }
             console.error(error);
         } finally {
             setIsApproving(false);
@@ -166,50 +175,59 @@ function Flow() {
         toast.info("Job execution cancelled.");
     };
 
+    // Track projectId locally (would ideally come from architecture-store)
+    const [projectId, setProjectId] = useState<string | null>(null);
+
     const handleGenerate = async () => {
         setIsGenerating(true);
         toast.info("Starting architecture generation...");
 
         try {
+            // INVARIANT: A job cannot be created unless a projectId exists
+            const validProjectId = await ensureProjectExists(projectId, 'Canvas Project');
+
+            // Persist the projectId for future job submissions
+            if (!projectId) {
+                setProjectId(validProjectId);
+                toast.info("Project created for this session");
+            }
+
             const flow = {
                 nodes,
                 edges,
-                viewport: { x: 0, y: 0, zoom: 1 } // Adding dummy viewport if needed or use getViewport()
+                viewport: { x: 0, y: 0, zoom: 1 }
             };
 
-            // Construct the payload for the planner
             const payload = {
                 name: "New Architecture",
                 description: "Generated via Visual Editor",
-                // Send full graph data for the backend transformer
                 nodes: nodes,
                 edges: edges,
                 metadata: {
                     flow_data: flow
                 },
-                // Keep these for backward compatibility if needed, but the backend now uses nodes/edges
                 components: nodes.map((n: Node) => (n.data as { label: string }).label),
                 frameworks: nodes.map((n: Node) => (n.data as { framework?: string }).framework).filter((f: string | undefined): f is string => !!f)
             };
 
-            const response = await fetch('http://localhost:8000/api/jobs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    architecture_spec: payload,
-                    project_id: null // optional
-                }),
+            // projectId is now GUARANTEED to be non-null
+            const { data, error } = await api.post<{ job_id: string }>('/api/jobs', {
+                architecture_spec: payload,
+                project_id: validProjectId
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to start job');
+            if (error || !data) {
+                throw new Error(error || 'Failed to start job');
             }
 
-            const data = await response.json();
             toast.success(`Job started: ${data.job_id}`);
 
         } catch (error) {
-            toast.error("Failed to generate architecture");
+            if (error instanceof AuthRequiredError) {
+                toast.error("Please log in to generate code.");
+            } else {
+                toast.error("Failed to generate architecture");
+            }
             console.error(error);
         } finally {
             setIsGenerating(false);

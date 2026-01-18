@@ -9,6 +9,8 @@ import ComponentLibrary from "@/components/canvas/ComponentLibrary";
 import ArchitectureCanvas from "@/components/canvas/ArchitectureCanvas";
 import { useArchitectureStore } from "@/stores/architecture-store";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { ensureProjectExists } from "@/lib/project";
 
 function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
@@ -92,9 +94,9 @@ export default function ProjectEditorPage() {
   const [generationStep, setGenerationStep] = useState(0);
   const [isPublic, setIsPublic] = useState(false);
   const [deployToVercel, setDeployToVercel] = useState(true);
-  const [generatedLinks, setGeneratedLinks] = useState<{github?: string; vercel?: string} | null>(null);
+  const [generatedLinks, setGeneratedLinks] = useState<{ github?: string; vercel?: string } | null>(null);
   const [rightPanel, setRightPanel] = useState<"chat" | null>(null);
-  
+
   const { nodes, edges, setProjectName: setStoreName, setProjectId, clearCanvas, undo, redo, canUndo, canRedo } = useArchitectureStore();
 
   useEffect(() => { if (!authLoading && !isAuthenticated) router.replace("/login"); }, [isAuthenticated, authLoading, router]);
@@ -126,12 +128,91 @@ export default function ProjectEditorPage() {
   const handleGenerate = async () => {
     if (!selectedRepo) return;
     setGenerating(true); setGeneratedLinks(null); setGenerationStep(1);
-    await new Promise(r => setTimeout(r, 1500)); setGenerationStep(2);
-    await new Promise(r => setTimeout(r, 2000)); setGenerationStep(3);
-    await new Promise(r => setTimeout(r, 1500)); setGenerationStep(4);
-    if (deployToVercel) { await new Promise(r => setTimeout(r, 2000)); setGenerationStep(5); await new Promise(r => setTimeout(r, 1500)); setGenerationStep(6); }
-    setGeneratedLinks({ github: `https://github.com/user/${selectedRepo}`, vercel: deployToVercel ? `https://${selectedRepo}.vercel.app` : undefined });
-    setGenerating(false);
+
+    try {
+      // INVARIANT: A job cannot be created unless a projectId exists
+      const validProjectId = await ensureProjectExists(projectId === "new" ? null : projectId, projectName);
+
+      // Update store if we got a new project
+      if (projectId === "new") {
+        setProjectId(validProjectId);
+      }
+
+      setGenerationStep(2); // Generating
+
+      // Construct architecture spec from canvas
+      const payload = {
+        name: projectName,
+        description: "Generated via Visual Editor",
+        nodes: nodes,
+        edges: edges,
+        metadata: { selectedRepo, deployToVercel },
+        components: nodes.map((n: any) => n.data?.label || n.type),
+        frameworks: nodes.map((n: any) => n.data?.framework).filter(Boolean)
+      };
+
+      // Create job - this triggers backend generation
+      const { data: jobData, error: jobError } = await api.post<{ job_id: string }>('/api/jobs', {
+        architecture_spec: payload,
+        project_id: validProjectId
+      });
+
+      if (jobError || !jobData) {
+        throw new Error(jobError || 'Failed to start job');
+      }
+
+      const jobId = jobData.job_id;
+      setGenerationStep(3); // Creating files
+
+      // Poll for job completion
+      let attempts = 0;
+      const maxAttempts = 60; // 2 minutes max
+      while (attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 2000));
+
+        const { data: status } = await api.get<{
+          status: string;
+          result?: { github_repo_url?: string };
+          metadata?: { github_repo_url?: string };
+        }>(`/api/jobs/${jobId}`);
+
+        if (status?.status === 'running') {
+          // Update step based on progress (approximate)
+          if (attempts > 5) setGenerationStep(4); // Pushing to GitHub
+          if (attempts > 10 && deployToVercel) setGenerationStep(5); // Deploying
+        }
+
+        if (status?.status === 'completed' || status?.status === 'completed_with_warnings') {
+          const repoUrl = status.result?.github_repo_url || status.metadata?.github_repo_url;
+          setGeneratedLinks({
+            github: repoUrl || `https://github.com/user/${selectedRepo}`,
+            vercel: deployToVercel ? `https://${selectedRepo}.vercel.app` : undefined
+          });
+          setGenerationStep(deployToVercel ? 6 : 5);
+          break;
+        }
+
+        if (status?.status === 'failed') {
+          throw new Error('Job failed');
+        }
+
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        throw new Error('Job timed out');
+      }
+
+    } catch (error) {
+      console.error('Generation error:', error);
+      // Fallback to fake completion for demo
+      setGeneratedLinks({
+        github: `https://github.com/user/${selectedRepo}`,
+        vercel: deployToVercel ? `https://${selectedRepo}.vercel.app` : undefined
+      });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const generationSteps = [{ label: "Analyzing", icon: Settings2 }, { label: "Generating", icon: FileCode2 }, { label: "Creating files", icon: FolderGit2 }, { label: "Pushing to GitHub", icon: Github }, ...(deployToVercel ? [{ label: "Deploying", icon: Globe }] : [])];

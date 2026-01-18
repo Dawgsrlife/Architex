@@ -3,7 +3,7 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import { ReactFlow, Background, Controls, MiniMap, BackgroundVariant, NodeTypes, EdgeTypes, ConnectionMode, useReactFlow, Node, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useArchitectureStore } from "@/stores/architecture-store";
+import { useArchitectureStore, ArchitectureNode } from "@/stores/architecture-store";
 import CustomNode from "./CustomNode";
 import CustomEdge from "./CustomEdge";
 import { Undo2, Redo2, Maximize2, Trash2, Copy } from "lucide-react";
@@ -92,8 +92,20 @@ export default function ArchitectureCanvas() {
   const handleDuplicateNode = useCallback(() => {
     if (contextMenu?.node) {
       const node = contextMenu.node;
-      const newNode = { ...node, id: `${node.data.componentId}-${Date.now()}`, position: { x: node.position.x + 50, y: node.position.y + 50 } };
-      addNode(newNode);
+      const nodeData = node.data as { componentId?: string; label?: string; category?: string; icon?: string; color?: string };
+      const newNode = { 
+        ...node, 
+        id: `${nodeData.componentId || 'node'}-${Date.now()}`, 
+        position: { x: node.position.x + 50, y: node.position.y + 50 },
+        data: {
+          label: nodeData.label || 'Component',
+          componentId: nodeData.componentId || 'component',
+          category: nodeData.category || 'misc',
+          icon: nodeData.icon || 'Box',
+          color: nodeData.color || '#6b7280',
+        }
+      };
+      addNode(newNode as ArchitectureNode);
     }
   }, [contextMenu, addNode]);
 
